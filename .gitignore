@@ -301,3 +301,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# S# files
+*.projectinfo
+ControlSystem.cfg
+
+
