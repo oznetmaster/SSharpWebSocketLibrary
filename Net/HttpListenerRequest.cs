@@ -660,7 +660,7 @@ namespace WebSocketSharp.Net
 				{
 				long len;
 #if SSHARP
-				if (TryParsers.Int64TryParse (val, out len) && len >= 0)
+				if (Int64Ex.TryParse (val, out len) && len >= 0)
 #else
 				if (Int64.TryParse (val, out len) && len >= 0)
 #endif

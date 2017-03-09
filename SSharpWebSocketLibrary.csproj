@@ -105,10 +105,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\SSMonoSslStreamLibrary\SSMonoSslStreamLibrary\bin\Release\SSMonoSslStreamLibrary.dll</HintPath>
     </Reference>
-    <Reference Include="SSMonoSupportLibrary, Version=1.0.0.11298, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\SSMonoSupportLibrary\bin\Release\SSMonoSupportLibrary.dll</HintPath>
-    </Reference>
     <Reference Include="SSMonoWebLibrary, Version=1.0.0.7717, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\SSMonoWebLibrary\SSMonoWebLibrary\bin\Release\SSMonoWebLibrary.dll</HintPath>

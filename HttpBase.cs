@@ -124,7 +124,7 @@ namespace WebSocketSharp
 			{
 			long len;
 #if NETCF
-			if (!TryParsers.Int64TryParse (length, out len))
+			if (!Int64Ex.TryParse (length, out len))
 #else
 			if (!Int64.TryParse (length, out len))
 #endif

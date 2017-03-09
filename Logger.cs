@@ -33,6 +33,7 @@ using Crestron.SimplSharp;
 using Crestron.SimplSharp.CrestronIO;
 using TextWriter = SSMono.IO.TextWriter;
 using StreamWriter = SSMono.IO.StreamWriter;
+using Crestron.SimplSharp.Reflection;
 #else
 using System.IO;
 #endif
@@ -236,7 +237,9 @@ namespace WebSocketSharp
 				try
 					{
 					data = new LogData (level,
-#if !NETCF
+#if NETCF
+						MethodBaseEx.GetStackMethodName (2),
+#else
 						new StackFrame (2, true),
 #endif
 						message);
@@ -245,7 +248,9 @@ namespace WebSocketSharp
 				catch (Exception ex)
 					{
 					data = new LogData (LogLevel.Fatal,
-#if !NETCF
+#if NETCF
+						MethodBaseEx.GetStackMethodName (0),
+#else
 						new StackFrame (0, true),
 #endif
 						ex.Message);

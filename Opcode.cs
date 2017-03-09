@@ -4,7 +4,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2015 sta.blockhead
+ * Copyright (c) 2012-2016 sta.blockhead
  * Copyright © 2016 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -36,9 +36,10 @@ namespace WebSocketSharp
 	/// </summary>
 	/// <remarks>
 	/// The values of this enumeration are defined in
-	/// <see href="http://tools.ietf.org/html/rfc6455#section-5.2">Section 5.2</see> of RFC 6455.
+	/// <see href="http://tools.ietf.org/html/rfc6455#section-5.2">
+	/// Section 5.2</see> of RFC 6455.
 	/// </remarks>
-	public enum Opcode : byte
+	internal enum Opcode : byte
 		{
 		/// <summary>
 		/// Equivalent to numeric value 0. Indicates continuation frame.
