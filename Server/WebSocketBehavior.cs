@@ -388,7 +388,7 @@ namespace WebSocketSharp.Server
 			{
 			if (_websocket != null)
 				{
-				_websocket.Log.Error ("This session has already been started.");
+				_websocket.Log.Error ("A session instance cannot be reused.");
 				context.WebSocket.Close (HttpStatusCode.ServiceUnavailable);
 
 				return;

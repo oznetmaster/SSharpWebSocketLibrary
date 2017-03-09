@@ -4,7 +4,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2015 sta.blockhead
+ * Copyright (c) 2012-2016 sta.blockhead
  * Copyright © 2016 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -41,9 +41,8 @@ namespace WebSocketSharp
 	///   of RFC 6455.
 	///   </para>
 	///   <para>
-	///   "Reserved value" must not be set as a status code in a connection close frame by
-	///   by an endpoint. It's designated for use in applications expecting a status
-	///   code to indicate that the connection was closed due to the system grounds.
+	///   "Reserved value" cannot be sent as a status code in
+	///   closing handshake by an endpoint.
 	///   </para>
 	/// </remarks>
 	public enum CloseStatusCode : ushort

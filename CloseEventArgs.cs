@@ -5,7 +5,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2015 sta.blockhead
+ * Copyright (c) 2012-2016 sta.blockhead
  * Copyright © 2016 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,8 +43,7 @@ namespace WebSocketSharp
 	/// </summary>
 	/// <remarks>
 	///   <para>
-	///   A <see cref="WebSocket.OnClose"/> event occurs when the WebSocket connection
-	///   has been closed.
+	///   That event occurs when the WebSocket connection has been closed.
 	///   </para>
 	///   <para>
 	///   If you would like to get the reason for the close, you should access
@@ -56,9 +55,7 @@ namespace WebSocketSharp
 		#region Private Fields
 
 		private bool _clean;
-		private ushort _code;
 		private PayloadData _payloadData;
-		private string _reason;
 
 		#endregion
 
@@ -66,35 +63,27 @@ namespace WebSocketSharp
 
 		internal CloseEventArgs ()
 			{
-			_code = (ushort)CloseStatusCode.NoStatus;
 			_payloadData = PayloadData.Empty;
 			}
 
 		internal CloseEventArgs (ushort code)
+			: this (code, null)
 			{
-			_code = code;
 			}
 
 		internal CloseEventArgs (CloseStatusCode code)
-			: this ((ushort)code)
+			: this ((ushort)code, null)
 			{
 			}
 
 		internal CloseEventArgs (PayloadData payloadData)
 			{
 			_payloadData = payloadData;
-
-			var data = payloadData.ApplicationData;
-			var len = data.Length;
-			_code = len > 1 ? data.SubArray (0, 2).ToUInt16 (ByteOrder.Big) : (ushort)CloseStatusCode.NoStatus;
-
-			_reason = len > 2 ? data.SubArray (2, len - 2).UTF8Decode () : String.Empty;
 			}
 
 		internal CloseEventArgs (ushort code, string reason)
 			{
-			_code = code;
-			_reason = reason;
+			_payloadData = new PayloadData (code, reason);
 			}
 
 		internal CloseEventArgs (CloseStatusCode code, string reason)
@@ -110,7 +99,7 @@ namespace WebSocketSharp
 			{
 			get
 				{
-				return _payloadData ?? (_payloadData = new PayloadData (_code.Append (_reason)));
+				return _payloadData;
 				}
 			}
 
@@ -126,7 +115,7 @@ namespace WebSocketSharp
 		/// </value>
 		public ushort Code
 			{
-			get { return _code; }
+			get { return _payloadData.Code; }
 			}
 
 		/// <summary>
@@ -137,7 +126,7 @@ namespace WebSocketSharp
 		/// </value>
 		public string Reason
 			{
-			get { return _reason ?? String.Empty; }
+			get { return _payloadData.Reason ?? String.Empty; }
 			}
 
 		/// <summary>

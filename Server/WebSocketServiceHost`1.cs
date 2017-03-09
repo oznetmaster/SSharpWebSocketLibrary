@@ -4,8 +4,8 @@
  *
  * The MIT License
  *
- * Copyright (c) 2015 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright (c) 2017 sta.blockhead
+ * Copyright © 2017 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,64 +36,28 @@ namespace WebSocketSharp.Server
 		{
 		#region Private Fields
 
-		private Func<TBehavior> _initializer;
-		private Logger _logger;
-		private string _path;
-		private WebSocketSessionManager _sessions;
+		private Func<TBehavior> _creator;
 
 		#endregion
 
 		#region Internal Constructors
 
-		internal WebSocketServiceHost (string path, Func<TBehavior> initializer, Logger logger)
+		internal WebSocketServiceHost (string path, Func<TBehavior> creator, Logger log)
+			: this (path, creator, null, log)
 			{
-			_path = path;
-			_initializer = initializer;
-			_logger = logger;
-			_sessions = new WebSocketSessionManager (logger);
+			}
+
+		internal WebSocketServiceHost (string path, Func<TBehavior> creator, Action<TBehavior> initializer, Logger log)
+			: base (path, log)
+			{
+			_creator = createCreator (creator, initializer);
 			}
 
 		#endregion
 
 		#region Public Properties
 
-		public override bool KeepClean
-			{
-			get
-				{
-				return _sessions.KeepClean;
-				}
-
-			set
-				{
-				var msg = _sessions.State.CheckIfAvailable (true, false, false);
-				if (msg != null)
-					{
-					_logger.Error (msg);
-					return;
-					}
-
-				_sessions.KeepClean = value;
-				}
-			}
-
-		public override string Path
-			{
-			get
-				{
-				return _path;
-				}
-			}
-
-		public override WebSocketSessionManager Sessions
-			{
-			get
-				{
-				return _sessions;
-				}
-			}
-
-		public override Type Type
+		public override Type BehaviorType
 			{
 			get
 				{
@@ -101,26 +65,22 @@ namespace WebSocketSharp.Server
 				}
 			}
 
-		public override TimeSpan WaitTime
+		#endregion
+
+		#region Private Methods
+
+		private Func<TBehavior> createCreator (Func<TBehavior> creator, Action<TBehavior> initializer)
 			{
-			get
-				{
-				return _sessions.WaitTime;
-				}
+			if (initializer == null)
+				return creator;
 
-			set
-				{
-				var msg = _sessions.State.CheckIfAvailable (true, false, false) ??
-							 value.CheckIfValidWaitTime ();
+			return () =>
+			{
+				var ret = creator ();
+				initializer (ret);
 
-				if (msg != null)
-					{
-					_logger.Error (msg);
-					return;
-					}
-
-				_sessions.WaitTime = value;
-				}
+				return ret;
+			};
 			}
 
 		#endregion
@@ -129,7 +89,7 @@ namespace WebSocketSharp.Server
 
 		protected override WebSocketBehavior CreateSession ()
 			{
-			return _initializer ();
+			return _creator ();
 			}
 
 		#endregion

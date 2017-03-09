@@ -30,6 +30,9 @@
 using System;
 using System.Diagnostics;
 using System.Text;
+#if SSHARP
+using Crestron.SimplSharp.Reflection;
+#endif
 
 namespace WebSocketSharp
 	{
@@ -40,7 +43,9 @@ namespace WebSocketSharp
 		{
 		#region Private Fields
 
-#if !NETCF
+#if NETCF
+		private string _caller;
+#else
 		private StackFrame _caller;
 #endif
 		private DateTime _date;
@@ -52,15 +57,15 @@ namespace WebSocketSharp
 		#region Internal Constructors
 
 		internal LogData (LogLevel level,
-#if !NETCF
+#if NETCF
+			string caller,
+#else
 			StackFrame caller,
 #endif
  string message)
 			{
 			_level = level;
-#if !NETCF
 			_caller = caller;
-#endif
 			_message = message ?? String.Empty;
 			_date = DateTime.Now;
 			}
@@ -69,7 +74,21 @@ namespace WebSocketSharp
 
 		#region Public Properties
 
-#if !NETCF
+#if NETCF
+		/// <summary>
+		/// Gets the information of the logging method caller.
+		/// </summary>
+		/// <value>
+		/// A <see cref="System.String"/> that provides the logging method caller.
+		/// </value>
+		public String Caller
+			{
+			get
+				{
+				return _caller;
+				}
+			}
+#else
 		/// <summary>
 		/// Gets the information of the logging method caller.
 		/// </summary>
@@ -141,7 +160,7 @@ namespace WebSocketSharp
 			{
 			var header = String.Format ("{0}|{1,-5}|", _date, _level);
 #if NETCF
-			var headerAndCaller = String.Format ("{0}", header);
+			var headerAndCaller = String.Format ("{0}{1}|", header, _caller);
 #else
 			var method = _caller.GetMethod ();
 			var type = method.DeclaringType;

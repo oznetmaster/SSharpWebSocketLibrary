@@ -4,7 +4,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2014 sta.blockhead
+ * Copyright (c) 2012-2016 sta.blockhead
  * Copyright © 2016 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -32,8 +32,9 @@ using System;
 namespace WebSocketSharp
 {
   /// <summary>
-  /// The exception that is thrown when a <see cref="WebSocket"/> gets a fatal error.
-  /// </summary>
+	/// The exception that is thrown when a fatal error occurs in
+	/// the WebSocket communication.
+	/// </summary>
   public class WebSocketException : Exception
   {
     #region Private Fields
@@ -93,9 +94,9 @@ namespace WebSocketSharp
     /// Gets the status code indicating the cause of the exception.
     /// </summary>
     /// <value>
-    /// One of the <see cref="CloseStatusCode"/> enum values, represents the status code
-    /// indicating the cause of the exception.
-    /// </value>
+	 /// One of the <see cref="CloseStatusCode"/> enum values that represents
+	 /// the status code indicating the cause of the exception.
+	 /// </value>
     public CloseStatusCode Code {
       get {
         return _code;

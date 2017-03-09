@@ -43,7 +43,7 @@ using System.Collections.Generic;
 #if SSHARP
 using Crestron.SimplSharp.CrestronIO;
 using SSMono.Threading;
-using Environment = SSMono.Environment;
+using Environment = Crestron.SimplSharp.CrestronEnvironmentEx;
 using File = SSMono.IO.File;
 using Activator = Crestron.SimplSharp.Reflection.ActivatorEx;
 using SSMono.Security.Principal;

@@ -4,7 +4,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2015 sta.blockhead
+ * Copyright (c) 2012-2016 sta.blockhead
  * Copyright © 2016 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -43,15 +43,14 @@ namespace WebSocketSharp
 	/// </summary>
 	/// <remarks>
 	///   <para>
-	///   A <see cref="WebSocket.OnError"/> event occurs when the <see cref="WebSocket"/> gets
-	///   an error.
+	///   That event occurs when the <see cref="WebSocket"/> gets an error.
 	///   </para>
 	///   <para>
 	///   If you would like to get the error message, you should access
 	///   the <see cref="ErrorEventArgs.Message"/> property.
 	///   </para>
 	///   <para>
-	///   And if the error is due to an exception, you can get the exception by accessing
+	///   And if the error is due to an exception, you can get it by accessing
 	///   the <see cref="ErrorEventArgs.Exception"/> property.
 	///   </para>
 	/// </remarks>
@@ -85,8 +84,8 @@ namespace WebSocketSharp
 		/// Gets the exception that caused the error.
 		/// </summary>
 		/// <value>
-		/// An <see cref="System.Exception"/> instance that represents the cause of the error,
-		/// or <see langword="null"/> if the error isn't due to an exception.
+		/// An <see cref="System.Exception"/> instance that represents the cause of
+		/// the error if it is due to an exception; otherwise, <see langword="null"/>.
 		/// </value>
 		public Exception Exception
 			{

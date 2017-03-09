@@ -223,7 +223,7 @@ namespace WebSocketSharp.Server
 					if (value)
 						_sweepTimer.Change (_sweepInterval, _sweepInterval);
 					else
-						_sweepTimer.Change (Timeout.Infinite, Timeout.Infinite);
+						_sweepTimer.Stop ();
 #else
 					_sweepTimer.Enabled = value;
 #endif
@@ -344,6 +344,28 @@ namespace WebSocketSharp.Server
 #endif
 			}
 
+		private void stop (PayloadData payloadData, bool send)
+			{
+			var bytes = send
+							? WebSocketFrame.CreateCloseFrame (payloadData, false).ToArray ()
+							: null;
+
+			lock (_sync)
+				{
+				_state = ServerState.ShuttingDown;
+
+#if NETCF
+				_sweepTimer.Stop ();
+#else
+				_sweepTimer.Enabled = _clean;
+#endif
+				foreach (var session in _sessions.Values.ToList ())
+					session.Context.WebSocket.Close (payloadData, bytes);
+
+				_state = ServerState.Stop;
+				}
+			}
+
 		private bool tryGetSession (string id, out IWebSocketSession session)
 			{
 			bool ret;
@@ -441,12 +463,23 @@ namespace WebSocketSharp.Server
 				if (_clean)
 					_sweepTimer.Change (_sweepInterval, _sweepInterval);
 				else
-					_sweepTimer.Change (Timeout.Infinite, Timeout.Infinite);
+					_sweepTimer.Stop ();
 #else
 				_sweepTimer.Enabled = _clean;
 #endif
 				_state = ServerState.Start;
 				}
+			}
+
+		internal void Stop (ushort code, string reason)
+			{
+			if (code == 1005)
+				{ // == no status
+				stop (PayloadData.Empty, true);
+				return;
+				}
+
+			stop (new PayloadData (code, reason), !code.IsReserved ());
 			}
 
 		internal void Stop (CloseEventArgs e, byte[] frameAsBytes, bool receive)
@@ -456,7 +489,7 @@ namespace WebSocketSharp.Server
 				_state = ServerState.ShuttingDown;
 
 #if NETCF
-				_sweepTimer.Change (Timeout.Infinite, Timeout.Infinite);
+				_sweepTimer.Stop ();
 #else
 				_sweepTimer.Enabled = false;
 #endif

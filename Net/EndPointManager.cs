@@ -114,7 +114,7 @@ namespace WebSocketSharp.Net
 
 			int port;
 #if SSHARP
-			if (!TryParsers.Int32TryParse (pref.Port, out port))
+			if (!Int32Ex.TryParse (pref.Port, out port))
 #else
 			if (!Int32.TryParse (pref.Port, out port))
 #endif
@@ -171,7 +171,7 @@ namespace WebSocketSharp.Net
 
 			int port;
 #if SSHARP
-			if (!TryParsers.Int32TryParse (pref.Port, out port))
+			if (!Int32Ex.TryParse (pref.Port, out port))
 #else
 			if (!Int32.TryParse (pref.Port, out port))
 #endif
