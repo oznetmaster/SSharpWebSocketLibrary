@@ -35,6 +35,7 @@ using Crestron.SimplSharp.CrestronIO;
 using SSMono.Web;
 using HttpUtility = SSMono.Web.HttpUtility;
 using SSMono.Threading;
+using Activator = Crestron.SimplSharp.Reflection.ActivatorEx;
 #else
 using System.IO;
 using System.Threading;
@@ -45,9 +46,12 @@ using WebSocketSharp.Net;
 namespace WebSocketSharp.Server
 	{
 	/// <summary>
-	/// Manages the WebSocket services provided by the <see cref="HttpServer"/> or
-	/// <see cref="WebSocketServer"/>.
+	/// Provides the management function for the WebSocket services.
 	/// </summary>
+	/// <remarks>
+	/// This class manages the WebSocket services provided by
+	/// the <see cref="WebSocketServer"/> or <see cref="HttpServer"/>.
+	/// </remarks>
 	public class WebSocketServiceManager
 		{
 		#region Private Fields
@@ -99,11 +103,16 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Gets the host instances for the Websocket services.
+		/// Gets the host instances for the WebSocket services.
 		/// </summary>
 		/// <value>
-		/// An <c>IEnumerable&lt;WebSocketServiceHost&gt;</c> instance that provides an enumerator
-		/// which supports the iteration over the collection of the host instances for the services.
+		///   <para>
+		///   An <c>IEnumerable&lt;WebSocketServiceHost&gt;</c> instance.
+		///   </para>
+		///   <para>
+		///   It provides an enumerator which supports the iteration over
+		///   the collection of the host instances.
+		///   </para>
 		/// </value>
 		public IEnumerable<WebSocketServiceHost> Hosts
 			{
@@ -115,33 +124,80 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Gets the WebSocket service host with the specified <paramref name="path"/>.
+		/// Gets the host instance for a WebSocket service with the specified
+		/// <paramref name="path"/>.
 		/// </summary>
+		/// <remarks>
+		/// <paramref name="path"/> is converted to a URL-decoded string and
+		/// / is trimmed from the end of the converted string if any.
+		/// </remarks>
 		/// <value>
-		/// A <see cref="WebSocketServiceHost"/> instance that provides the access to
-		/// the information in the service, or <see langword="null"/> if it's not found.
+		///   <para>
+		///   A <see cref="WebSocketServiceHost"/> instance or
+		///   <see langword="null"/> if not found.
+		///   </para>
+		///   <para>
+		///   That host instance provides the function to access
+		///   the information in the service.
+		///   </para>
 		/// </value>
 		/// <param name="path">
-		/// A <see cref="string"/> that represents the absolute path to the service to find.
+		/// A <see cref="string"/> that represents an absolute path to the service to find.
 		/// </param>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="path"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="path"/> is empty.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> is not an absolute path.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> includes either or both
+		///   query and fragment components.
+		///   </para>
+		/// </exception>
 		public WebSocketServiceHost this[string path]
 			{
 			get
 				{
+				if (path == null)
+					throw new ArgumentNullException ("path");
+
+				if (path.Length == 0)
+					throw new ArgumentException ("An empty string.", "path");
+
+				if (path[0] != '/')
+					throw new ArgumentException ("Not an absolute path.", "path");
+
+				if (path.IndexOfAny (new[] { '?', '#' }) > -1)
+					{
+					var msg = "It includes either or both query and fragment components.";
+					throw new ArgumentException (msg, "path");
+					}
+
 				WebSocketServiceHost host;
-				TryGetServiceHost (path, out host);
+				InternalTryGetServiceHost (path, out host);
 
 				return host;
 				}
 			}
 
 		/// <summary>
-		/// Gets a value indicating whether the manager cleans up the inactive sessions
-		/// in the WebSocket services periodically.
+		/// Gets a value indicating whether the inactive sessions in
+		/// the WebSocket services are cleaned up periodically.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the manager cleans up the inactive sessions every 60 seconds;
-		/// otherwise, <c>false</c>.
+		/// <c>true</c> if the inactive sessions in the services are
+		/// cleaned up every 60 seconds; otherwise, <c>false</c>.
 		/// </value>
 		public bool KeepClean
 			{
@@ -154,10 +210,8 @@ namespace WebSocketSharp.Server
 				{
 				lock (_sync)
 					{
-					if (!(value ^ _clean))
-						return;
-
 					_clean = value;
+
 					foreach (var host in _hosts.Values)
 						host.KeepClean = value;
 					}
@@ -168,8 +222,13 @@ namespace WebSocketSharp.Server
 		/// Gets the paths for the WebSocket services.
 		/// </summary>
 		/// <value>
-		/// An <c>IEnumerable&lt;string&gt;</c> instance that provides an enumerator which supports
-		/// the iteration over the collection of the paths for the services.
+		///   <para>
+		///   An <c>IEnumerable&lt;string&gt;</c> instance.
+		///   </para>
+		///   <para>
+		///   It provides an enumerator which supports the iteration over
+		///   the collection of the paths.
+		///   </para>
 		/// </value>
 		public IEnumerable<string> Paths
 			{
@@ -184,8 +243,10 @@ namespace WebSocketSharp.Server
 		/// Gets the total number of the sessions in the WebSocket services.
 		/// </summary>
 		/// <value>
-		/// An <see cref="int"/> that represents the total number of the sessions in the services.
+		/// An <see cref="int"/> that represents the total number of
+		/// the sessions in the services.
 		/// </value>
+		[Obsolete ("This property will be removed.")]
 		public int SessionCount
 			{
 			get
@@ -207,7 +268,7 @@ namespace WebSocketSharp.Server
 		/// Gets the wait time for the response to the WebSocket Ping or Close.
 		/// </summary>
 		/// <value>
-		/// A <see cref="TimeSpan"/> that represents the wait time.
+		/// A <see cref="TimeSpan"/> that represents the wait time for the response.
 		/// </value>
 		public TimeSpan WaitTime
 			{
@@ -220,10 +281,8 @@ namespace WebSocketSharp.Server
 				{
 				lock (_sync)
 					{
-					if (value == _waitTime)
-						return;
-
 					_waitTime = value;
+
 					foreach (var host in _hosts.Values)
 						host.WaitTime = value;
 					}
@@ -252,7 +311,8 @@ namespace WebSocketSharp.Server
 				}
 			catch (Exception ex)
 				{
-				_logger.Fatal (ex.ToString ());
+				_logger.Error (ex.Message);
+				_logger.Debug (ex.ToString ());
 				}
 			finally
 				{
@@ -278,7 +338,8 @@ namespace WebSocketSharp.Server
 				}
 			catch (Exception ex)
 				{
-				_logger.Fatal (ex.ToString ());
+				_logger.Error (ex.Message);
+				_logger.Debug (ex.ToString ());
 				}
 			finally
 				{
@@ -303,6 +364,7 @@ namespace WebSocketSharp.Server
 		  byte[] frameAsBytes, TimeSpan timeout)
 			{
 			var ret = new Dictionary<string, Dictionary<string, bool>> ();
+
 			foreach (var host in Hosts)
 				{
 				if (_state != ServerState.Start)
@@ -318,22 +380,19 @@ namespace WebSocketSharp.Server
 
 		#region Internal Methods
 
-		internal void Add<TBehavior> (string path, Func<TBehavior> initializer)
+		internal void Add<TBehavior> (string path, Func<TBehavior> creator)
 		  where TBehavior : WebSocketBehavior
 			{
-			path = HttpUtility.UrlDecode (path).TrimEndSlash ();
+			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
 
 			lock (_sync)
 				{
 				WebSocketServiceHost host;
 				if (_hosts.TryGetValue (path, out host))
-					{
-					_logger.Error ("A WebSocket service with the specified path has already existed.");
+					throw new ArgumentException ("Already in use.", "path");
 
-					return;
-					}
+				host = new WebSocketServiceHost<TBehavior> (path, creator, null, _logger);
 
-				host = new WebSocketServiceHost<TBehavior> (path, initializer, _logger);
 				if (!_clean)
 					host.KeepClean = false;
 
@@ -347,9 +406,9 @@ namespace WebSocketSharp.Server
 				}
 			}
 
-		internal bool InternalTryGetServiceHost (string path, out WebSocketServiceHost host, bool logError)
+		internal bool InternalTryGetServiceHost (string path, out WebSocketServiceHost host)
 			{
-			path = HttpUtility.UrlDecode (path).TrimEndSlash ();
+			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
 
 			lock (_sync)
 				{
@@ -359,16 +418,13 @@ namespace WebSocketSharp.Server
 
 		internal bool Remove (string path)
 			{
-			path = HttpUtility.UrlDecode (path).TrimEndSlash ();
+			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
 
 			WebSocketServiceHost host;
 			lock (_sync)
 				{
 				if (!_hosts.TryGetValue (path, out host))
-					{
-					_logger.Error ("A WebSocket service with the specified path could not be found.");
 					return false;
-					}
 
 				_hosts.Remove (path);
 				}
@@ -423,19 +479,128 @@ namespace WebSocketSharp.Server
 		#region Public Methods
 
 		/// <summary>
-		/// Sends binary <paramref name="data"/> to every client in the WebSocket services.
+		/// Adds a WebSocket service with the specified behavior,
+		/// <paramref name="path"/>, and <paramref name="initializer"/>.
+		/// </summary>
+		/// <remarks>
+		/// <paramref name="path"/> is converted to a URL-decoded string and
+		/// / is trimmed from the end of the converted string if any.
+		/// </remarks>
+		/// <param name="path">
+		/// A <see cref="string"/> that represents an absolute path to
+		/// the service to add.
+		/// </param>
+		/// <param name="initializer">
+		/// An <c>Action&lt;TBehavior&gt;</c> delegate that invokes
+		/// the method used to initialize a new session instance for
+		/// the service or <see langword="null"/> if not needed.
+		/// </param>
+		/// <typeparam name="TBehavior">
+		/// The type of the behavior for the service. It must inherit
+		/// the <see cref="WebSocketBehavior"/> class and it must have
+		/// a public parameterless constructor.
+		/// </typeparam>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="path"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="path"/> is empty.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> is not an absolute path.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> includes either or both
+		///   query and fragment components.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> is already in use.
+		///   </para>
+		/// </exception>
+		public void AddService<TBehavior> (
+		  string path, Action<TBehavior> initializer
+		)
+		  where TBehavior : WebSocketBehavior, new ()
+			{
+			if (path == null)
+				throw new ArgumentNullException ("path");
+
+			if (path.Length == 0)
+				throw new ArgumentException ("An empty string.", "path");
+
+			if (path[0] != '/')
+				throw new ArgumentException ("Not an absolute path.", "path");
+
+			if (path.IndexOfAny (new[] { '?', '#' }) > -1)
+				{
+				var msg = "It includes either or both query and fragment components.";
+				throw new ArgumentException (msg, "path");
+				}
+
+			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
+
+			lock (_sync)
+				{
+				WebSocketServiceHost host;
+				if (_hosts.TryGetValue (path, out host))
+					throw new ArgumentException ("Already in use.", "path");
+
+				host = new WebSocketServiceHost<TBehavior> (
+#if SSHARP
+							path, Activator.CreateInstance<TBehavior>, initializer, _logger
+#else
+							path, () => new TBehavior (), initializer, _logger
+#endif
+						 );
+
+				if (!_clean)
+					host.KeepClean = false;
+
+				if (_waitTime != host.WaitTime)
+					host.WaitTime = _waitTime;
+
+				if (_state == ServerState.Start)
+					host.Start ();
+
+				_hosts.Add (path, host);
+				}
+			}
+
+		/// <summary>
+		/// Sends the specified <paramref name="data"/> to
+		/// every client in the WebSocket services.
 		/// </summary>
 		/// <param name="data">
-		/// An array of <see cref="byte"/> that represents the binary data to broadcast.
+		/// An array of <see cref="byte"/> that represents
+		/// the binary data to send.
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="data"/> is <see langword="null"/>.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public void Broadcast (byte[] data)
 			{
-			var msg = _state.CheckIfAvailable (false, true, false) ?? WebSocket.CheckSendParameter (data);
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
+
+			if (data == null)
+				throw new ArgumentNullException ("data");
 
 #if NETCF
 			if (data.Length <= WebSocket.FragmentLength)
@@ -448,21 +613,40 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends text <paramref name="data"/> to every client in the WebSocket services.
+		/// Sends the specified <paramref name="data"/> to
+		/// every client in the WebSocket services.
 		/// </summary>
 		/// <param name="data">
 		/// A <see cref="string"/> that represents the text data to broadcast.
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="data"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		/// <paramref name="data"/> could not be UTF-8-encoded.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public void Broadcast (string data)
 			{
-			var msg = _state.CheckIfAvailable (false, true, false) ?? WebSocket.CheckSendParameter (data);
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
 
-			var bytes = data.UTF8Encode ();
+			if (data == null)
+				throw new ArgumentNullException ("data");
+
+			byte[] bytes;
+			if (!data.TryGetUTF8EncodedBytes (out bytes))
+				{
+				var msg = "It could not be UTF-8-encoded.";
+				throw new ArgumentException (msg, "data");
+				}
+
 #if NETCF
 			if (bytes.Length <= WebSocket.FragmentLength)
 #else
@@ -474,27 +658,43 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends binary <paramref name="data"/> asynchronously to every client
-		/// in the WebSocket services.
+		/// Sends the specified <paramref name="data"/> asynchronously to
+		/// every client in the WebSocket services.
 		/// </summary>
 		/// <remarks>
-		/// This method doesn't wait for the send to be complete.
+		/// This method does not wait for the send to be complete.
 		/// </remarks>
 		/// <param name="data">
-		/// An array of <see cref="byte"/> that represents the binary data to send.
+		/// An array of <see cref="byte"/> that represents
+		/// the binary data to send.
 		/// </param>
 		/// <param name="completed">
-		/// An <see cref="Action"/> delegate that references the method(s) called when
-		/// the send is complete.
+		///   <para>
+		///   An <see cref="Action"/> delegate or
+		///   <see langword="null"/> if not needed.
+		///   </para>
+		///   <para>
+		///   That delegate invokes the method called when
+		///   the send is complete.
+		///   </para>
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="data"/> is <see langword="null"/>.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public void BroadcastAsync (byte[] data, Action completed)
 			{
-			var msg = _state.CheckIfAvailable (false, true, false) ?? WebSocket.CheckSendParameter (data);
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
+
+			if (data == null)
+				throw new ArgumentNullException ("data");
 
 #if NETCF
 			if (data.Length <= WebSocket.FragmentLength)
@@ -507,29 +707,53 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends text <paramref name="data"/> asynchronously to every client
-		/// in the WebSocket services.
+		/// Sends the specified <paramref name="data"/> asynchronously to
+		/// every client in the WebSocket services.
 		/// </summary>
 		/// <remarks>
-		/// This method doesn't wait for the send to be complete.
+		/// This method does not wait for the send to be complete.
 		/// </remarks>
 		/// <param name="data">
 		/// A <see cref="string"/> that represents the text data to send.
 		/// </param>
 		/// <param name="completed">
-		/// An <see cref="Action"/> delegate that references the method(s) called when
-		/// the send is complete.
+		///   <para>
+		///   An <see cref="Action"/> delegate or
+		///   <see langword="null"/> if not needed.
+		///   </para>
+		///   <para>
+		///   That delegate invokes the method called when
+		///   the send is complete.
+		///   </para>
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="data"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		/// <paramref name="data"/> could not be UTF-8-encoded.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public void BroadcastAsync (string data, Action completed)
 			{
-			var msg = _state.CheckIfAvailable (false, true, false) ?? WebSocket.CheckSendParameter (data);
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
 
-			var bytes = data.UTF8Encode ();
+			if (data == null)
+				throw new ArgumentNullException ("data");
+
+			byte[] bytes;
+			if (!data.TryGetUTF8EncodedBytes (out bytes))
+				{
+				var msg = "It could not be UTF-8-encoded.";
+				throw new ArgumentException (msg, "data");
+				}
+
 #if NETCF
 			if (bytes.Length <= WebSocket.FragmentLength)
 #else
@@ -541,139 +765,323 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends binary data from the specified <see cref="Stream"/> asynchronously
-		/// to every client in the WebSocket services.
+		/// Sends the specified <paramref name="length"/> of data from
+		/// the specified <paramref name="stream"/> asynchronously to
 		/// </summary>
 		/// <remarks>
-		/// This method doesn't wait for the send to be complete.
+		/// This method does not wait for the send to be complete.
 		/// </remarks>
 		/// <param name="stream">
-		/// A <see cref="Stream"/> from which contains the binary data to send.
+		/// A <see cref="Stream"/> from which to read the binary data to send.
 		/// </param>
 		/// <param name="length">
-		/// An <see cref="int"/> that represents the number of bytes to send.
+		/// An <see cref="int"/> that specifies the number of bytes to
+		/// read and send.
 		/// </param>
 		/// <param name="completed">
-		/// An <see cref="Action"/> delegate that references the method(s) called when
-		/// the send is complete.
+		///   <para>
+		///   An <see cref="Action"/> delegate or
+		///   <see langword="null"/> if not needed.
+		///   </para>
+		///   <para>
+		///   That delegate invokes the method called when
+		///   the send is complete.
+		///   </para>
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="stream"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="stream"/> cannot be read.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="length"/> is less than 1.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   No data could be read from <paramref name="stream"/>.
+		///   </para>
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public void BroadcastAsync (Stream stream, int length, Action completed)
 			{
-			var msg = _state.CheckIfAvailable (false, true, false) ??
-					 WebSocket.CheckSendParameters (stream, length);
-
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
 
-			stream.ReadBytesAsync (
-			  length,
-			  data =>
-				  {
-				  var len = data.Length;
-				  if (len == 0)
-					  {
-					  _logger.Error ("The data cannot be read from 'stream'.");
-					  return;
-					  }
+			if (stream == null)
+				throw new ArgumentNullException ("stream");
 
-				  if (len < length)
-					  _logger.Warn (
-						String.Format (
-						  "The data with 'length' cannot be read from 'stream'.\n  expected: {0} actual: {1}",
-						  length,
-						  len));
+			if (!stream.CanRead)
+				throw new ArgumentException ("It cannot be read.", "stream");
 
-				  if (len <= WebSocket.FragmentLength)
-					  broadcast (Opcode.Binary, data, completed);
-				  else
-					  broadcast (Opcode.Binary, new MemoryStream (data), completed);
-				  },
-			  ex => _logger.Fatal (ex.ToString ()));
+			if (length < 1)
+				throw new ArgumentException ("It is less than 1.", "length");
+
+			var bytes = stream.ReadBytes (length);
+
+			var len = bytes.Length;
+			if (len == 0)
+				{
+				var msg = "No data could be read from it.";
+				throw new ArgumentException (msg, "stream");
+				}
+
+			if (len < length)
+				{
+				_logger.Warn (
+				  String.Format (
+					 "Only {0} byte(s) of data could be read from the specified stream.",
+					 len
+				  )
+				);
+				}
+
+			if (len <= WebSocket.FragmentLength)
+				broadcastAsync (Opcode.Binary, bytes, completed);
+			else
+				broadcastAsync (Opcode.Binary, new MemoryStream (bytes), completed);
 			}
 
 		/// <summary>
-		/// Sends a Ping to every client in the WebSocket services.
+		/// Sends a ping to every client in the WebSocket services.
 		/// </summary>
 		/// <returns>
-		/// A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c> that contains
-		/// a collection of pairs of a service path and a collection of pairs of a session ID
-		/// and a value indicating whether the manager received a Pong from each client in a time,
-		/// or <see langword="null"/> if this method isn't available.
+		///   <para>
+		///   A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c>.
+		///   </para>
+		///   <para>
+		///   It represents a collection of pairs of a service path and
+		///   another collection of pairs of a session ID and a value
+		///   indicating whether a pong has been received within a time
+		///   from its client.
+		///   </para>
 		/// </returns>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public Dictionary<string, Dictionary<string, bool>> Broadping ()
 			{
-			var msg = _state.CheckIfAvailable (false, true, false);
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return null;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
 
 			return broadping (WebSocketFrame.EmptyPingBytes, _waitTime);
 			}
 
 		/// <summary>
-		/// Sends a Ping with the specified <paramref name="message"/> to every client
-		/// in the WebSocket services.
+		/// Sends a ping with the specified <paramref name="message"/> to
+		/// every client in the WebSocket services.
 		/// </summary>
 		/// <returns>
-		/// A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c> that contains
-		/// a collection of pairs of a service path and a collection of pairs of a session ID
-		/// and a value indicating whether the manager received a Pong from each client in a time,
-		/// or <see langword="null"/> if this method isn't available or <paramref name="message"/>
-		/// is invalid.
+		///   <para>
+		///   A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c>.
+		///   </para>
+		///   <para>
+		///   It represents a collection of pairs of a service path and
+		///   another collection of pairs of a session ID and a value
+		///   indicating whether a pong has been received within a time
+		///   from its client.
+		///   </para>
 		/// </returns>
 		/// <param name="message">
-		/// A <see cref="string"/> that represents the message to send.
+		/// A <see cref="string"/> that represents a message to send.
+		/// The size must be 125 bytes or less in UTF-8.
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// The current state of the manager is not Start.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="message"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		/// <paramref name="message"/> could not be UTF-8-encoded.
+		/// </exception>
+		/// <exception cref="ArgumentOutOfRangeException">
+		/// The size of <paramref name="message"/> is greater than 125 bytes.
+		/// </exception>
+		[Obsolete ("This method will be removed.")]
 		public Dictionary<string, Dictionary<string, bool>> Broadping (string message)
 			{
-			if (message == null || message.Length == 0)
-				return Broadping ();
-
-			byte[] data = null;
-			var msg = _state.CheckIfAvailable (false, true, false) ?? WebSocket.CheckPingParameter (message, out data);
-
-			if (msg != null)
+			if (_state != ServerState.Start)
 				{
-				_logger.Error (msg);
-				return null;
+				var msg = "The current state of the manager is not Start.";
+				throw new InvalidOperationException (msg);
 				}
 
-			return broadping (WebSocketFrame.CreatePingFrame (data, false).ToArray (), _waitTime);
+			if (message == null)
+				throw new ArgumentNullException ("message");
+
+			byte[] bytes;
+			if (!message.TryGetUTF8EncodedBytes (out bytes))
+				{
+				var msg = "It could not be UTF-8-encoded.";
+				throw new ArgumentException (msg, "message");
+				}
+
+			if (bytes.Length > 125)
+				{
+				var msg = "Its size is greater than 125 bytes.";
+				throw new ArgumentOutOfRangeException ("message", msg);
+				}
+
+			var frame = WebSocketFrame.CreatePingFrame (bytes, false);
+			return broadping (frame.ToArray (), _waitTime);
 			}
 
 		/// <summary>
-		/// Tries to get the WebSocket service host with the specified <paramref name="path"/>.
+		/// Removes a WebSocket service with the specified <paramref name="path"/>.
 		/// </summary>
+		/// <remarks>
+		///   <para>
+		///   <paramref name="path"/> is converted to a URL-decoded string and
+		///   / is trimmed from the end of the converted string if any.
+		///   </para>
+		///   <para>
+		///   The service is stopped with close status 1001 (going away)
+		///   if it has already started.
+		///   </para>
+		/// </remarks>
+		/// <returns>
+		/// <c>true</c> if the service is successfully found and removed;
+		/// otherwise, <c>false</c>.
+		/// </returns>
+		/// <param name="path">
+		/// A <see cref="string"/> that represents an absolute path to
+		/// the service to remove.
+		/// </param>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="path"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="path"/> is empty.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> is not an absolute path.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> includes either or both
+		///   query and fragment components.
+		///   </para>
+		/// </exception>
+		public bool RemoveService (string path)
+			{
+			if (path == null)
+				throw new ArgumentNullException ("path");
+
+			if (path.Length == 0)
+				throw new ArgumentException ("An empty string.", "path");
+
+			if (path[0] != '/')
+				throw new ArgumentException ("Not an absolute path.", "path");
+
+			if (path.IndexOfAny (new[] { '?', '#' }) > -1)
+				{
+				var msg = "It includes either or both query and fragment components.";
+				throw new ArgumentException (msg, "path");
+				}
+
+			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
+
+			WebSocketServiceHost host;
+			lock (_sync)
+				{
+				if (!_hosts.TryGetValue (path, out host))
+					return false;
+
+				_hosts.Remove (path);
+				}
+
+			if (host.State == ServerState.Start)
+				host.Stop (1001, String.Empty);
+
+			return true;
+			}
+
+		/// <summary>
+		/// Tries to get the host instance for a WebSocket service with
+		/// the specified <paramref name="path"/>.
+		/// </summary>
+		/// <remarks>
+		/// <paramref name="path"/> is converted to a URL-decoded string and
+		/// / is trimmed from the end of the converted string if any.
+		/// </remarks>
 		/// <returns>
 		/// <c>true</c> if the service is successfully found; otherwise, <c>false</c>.
 		/// </returns>
 		/// <param name="path">
-		/// A <see cref="string"/> that represents the absolute path to the service to find.
+		/// A <see cref="string"/> that represents an absolute path to the service to find.
 		/// </param>
 		/// <param name="host">
-		/// When this method returns, a <see cref="WebSocketServiceHost"/>
-		/// instance that provides the access to the information in
-		/// the service or <see langword="null"/> if it is not found.
+		///   <para>
+		///   When this method returns, a <see cref="WebSocketServiceHost"/>
+		///   instance or <see langword="null"/> if not found.
+		///   </para>
+		///   <para>
+		///   That host instance provides the function to access
+		///   the information in the service.
+		///   </para>
 		/// </param>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="path"/> is <see langword="null"/>.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="path"/> is empty.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> is not an absolute path.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="path"/> includes either or both
+		///   query and fragment components.
+		///   </para>
+		/// </exception>
 		public bool TryGetServiceHost (string path, out WebSocketServiceHost host)
 			{
-			host = null;
+			if (path == null)
+				throw new ArgumentNullException ("path");
 
-			if (path == null || path.Length == 0)
-				return false;
+			if (path.Length == 0)
+				throw new ArgumentException ("An empty string.", "path");
 
 			if (path[0] != '/')
-				return false;
+				throw new ArgumentException ("Not an absolute path.", "path");
 
 			if (path.IndexOfAny (new[] { '?', '#' }) > -1)
-				return false;
+				{
+				var msg = "It includes either or both query and fragment components.";
+				throw new ArgumentException (msg, "path");
+				}
 
-			return InternalTryGetServiceHost (path, out host, true);
+			return InternalTryGetServiceHost (path, out host);
 			}
 
 		#endregion
