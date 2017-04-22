@@ -1040,11 +1040,11 @@ namespace WebSocketSharp.Server
 			{
 			WebSocketServiceHost host;
 			string path = context.RequestUri.AbsolutePath;
-			if (!_services.InternalTryGetServiceHost (path, out host, false))
+			if (!_services.InternalTryGetServiceHost (path, out host))
 				{
 				if (OnResolveWebSocketServiceHost != null)
 					{
-					var hrwsshea = new HttpResolveWebSocketServiceHostEventArgs (HttpUtility.UrlDecode (path).TrimEndSlash ());
+					var hrwsshea = new HttpResolveWebSocketServiceHostEventArgs (HttpUtility.UrlDecode (path).TrimSlashFromEnd ());
 					OnResolveWebSocketServiceHost (this, hrwsshea);
 					host = hrwsshea.Host;
 					}
