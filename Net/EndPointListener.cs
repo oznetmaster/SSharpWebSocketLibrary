@@ -59,6 +59,7 @@ using System.Collections.Generic;
 using Crestron.SimplSharp;
 using Crestron.SimplSharp.CrestronIO;
 using Crestron.SimplSharp.CrestronSockets;
+using SocketException = SSMono.Net.Sockets.SocketException;
 using SSMono.Threading;
 using IAsyncResult = Crestron.SimplSharp.CrestronIO.IAsyncResult;
 using AsyncCallback = Crestron.SimplSharp.CrestronIO.AsyncCallback;
@@ -296,9 +297,9 @@ namespace WebSocketSharp.Net
 				{
 				sock = lsnr._socket.EndAccept (asyncResult);
 				}
-			catch (SocketException)
+			catch (SocketException sex)
 				{
-				// TODO: Should log the error code when this class has a logging.
+				lsnr._logger.Error (sex.Message);
 				}
 			catch (ObjectDisposedException)
 				{

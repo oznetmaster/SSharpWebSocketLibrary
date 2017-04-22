@@ -51,8 +51,10 @@ using SSMono.Threading;
 using TcpListener = Crestron.SimplSharp.CrestronSockets.CrestronListenerSocket;
 using TcpClient = Crestron.SimplSharp.CrestronSockets.CrestronServerSocket;
 using Activator = Crestron.SimplSharp.Reflection.ActivatorEx;
+using SocketException = SSMono.Net.Sockets.SocketException;
 using SSMono.Security.Principal;
 using SSMono.Net;
+using SSMono.Net.Sockets;
 using SSMono.Web;
 using HttpUtility = WebSocketSharp.Net.HttpUtility;
 using NetworkCredential = WebSocketSharp.Net.NetworkCredential;
@@ -68,6 +70,11 @@ using WebSocketSharp.Net.WebSockets;
 
 namespace WebSocketSharp.Server
 	{
+	public class RecoverableSocketEventArgs : EventArgs
+		{
+		public SocketError SocketError;
+		}
+
 	/// <summary>
 	/// Provides a WebSocket protocol server.
 	/// </summary>
@@ -104,7 +111,18 @@ namespace WebSocketSharp.Server
 		private Func<IIdentity, NetworkCredential> _userCredFinder;
 		private int _maxConnections;
 
+#if SSHARP
+		private int _retryInterval = 1000;
+#endif
+
 		#endregion
+
+#if SSHARP
+		#region Public Events
+		public delegate void RecoverableSocketeventHandler (object sender, RecoverableSocketEventArgs e);
+		public event RecoverableSocketeventHandler RecoverableSocketEvent;
+		#endregion
+#endif
 
 		#region Static Constructor
 
@@ -685,6 +703,36 @@ namespace WebSocketSharp.Server
 				}
 			}
 
+#if SSHARP
+		public int RetryInterval
+			{
+			get { return _retryInterval; }
+			set
+				{
+				if (value < 0)
+					throw new ArgumentOutOfRangeException ("value", "must be >= 0");
+
+				string msg;
+				if (!canSet (out msg))
+					{
+					_log.Warn (msg);
+					return;
+					}
+
+				lock (_sync)
+					{
+					if (!canSet (out msg))
+						{
+						_log.Warn (msg);
+						return;
+						}
+
+					_retryInterval = value;
+					}
+				}
+			}
+#endif
+
 		/// <summary>
 		/// Gets or sets a value indicating whether the server is allowed to
 		/// be bound to an address that is already in use.
@@ -1023,19 +1071,8 @@ namespace WebSocketSharp.Server
 				{
 				try
 					{
-#if SSHARP
-					if (_listener.Server.NumberOfClientsConnected < _listener.Server.MaxNumberOfClientSupported)
-						{
-						cl = _listener.Accept ();
-						}
-					else
-						{
-						Thread.Sleep (1000);
-						continue;
-						}
-#else
 					cl = _listener.AcceptTcpClient ();
-#endif
+
 					ThreadPool.QueueUserWorkItem (state =>
 						{
 						try
@@ -1066,6 +1103,21 @@ namespace WebSocketSharp.Server
 						_log.Info ("The receiving is stopped.");
 						break;
 						}
+
+#if SSHARP
+					if (ex.SocketErrorCode == SocketError.TooManyOpenSockets || ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+						{
+						_log.Warn (ex.Message);
+						_log.Debug (ex.ToString ());
+
+						if (RecoverableSocketEvent != null)
+							RecoverableSocketEvent (this, new RecoverableSocketEventArgs { SocketError = ex.SocketErrorCode });
+
+						Thread.Sleep (_retryInterval);
+
+						continue;
+						}
+#endif
 
 					_log.Fatal (ex.Message);
 					_log.Debug (ex.ToString ());
