@@ -269,58 +269,6 @@ namespace WebSocketSharp
 			}
 
 #if !CLIENT
-		internal static string CheckIfAvailable (this ServerState state, bool ready, bool start, bool shutting)
-			{
-			return (!ready && (state == ServerState.Ready || state == ServerState.Stop)) || (!start && state == ServerState.Start)
-			       || (!shutting && state == ServerState.ShuttingDown) ? "This operation isn't available in: " + state.ToString ().ToLower () : null;
-			}
-#endif
-
-		internal static string CheckIfAvailable (this WebSocketState state, bool connecting, bool open, bool closing, bool closed)
-			{
-			return (!connecting && state == WebSocketState.Connecting) || (!open && state == WebSocketState.Open) || (!closing && state == WebSocketState.Closing)
-			       || (!closed && state == WebSocketState.Closed) ? "This operation isn't available in: " + state.ToString ().ToLower () : null;
-			}
-
-		internal static string CheckIfValidProtocols (this string[] protocols)
-			{
-			return protocols.Contains (protocol => protocol == null || protocol.Length == 0 || !protocol.IsToken ())
-				       ? "Contains an invalid value." : protocols.ContainsTwice () ? "Contains a value twice." : null;
-			}
-
-		internal static string CheckIfValidServicePath (this string path)
-			{
-			return path == null || path.Length == 0
-				       ? "'path' is null or empty."
-				       : path[0] != '/'
-					         ? "'path' isn't an absolute path."
-					         : path.IndexOfAny (new[] {'?', '#'}) > -1 ? "'path' includes either or both query and fragment components." : null;
-			}
-
-		internal static string CheckIfValidSessionID (this string id)
-			{
-			return id == null || id.Length == 0 ? "'id' is null or empty." : null;
-			}
-
-		internal static string CheckIfValidWaitTime (this TimeSpan time)
-			{
-			return time <= TimeSpan.Zero ? "A wait time is zero or less." : null;
-			}
-
-		internal static bool CheckWaitTime (this TimeSpan time, out string message)
-			{
-			message = null;
-
-			if (time <= TimeSpan.Zero)
-				{
-				message = "A wait time is zero or less.";
-				return false;
-				}
-
-			return true;
-			}
-
-#if !CLIENT
 		internal static void Close (this HttpListenerResponse response, HttpStatusCode code)
 			{
 			response.StatusCode = (int)code;
@@ -363,25 +311,25 @@ namespace WebSocketSharp
 		internal static bool ContainsTwice (this string[] values)
 			{
 			var len = values.Length;
+			var end = len - 1;
 
-			Func<int, bool> contains = null;
-			contains = idx =>
+			Func<int, bool> seek = null;
+			seek = idx =>
 				{
-				if (idx < len - 1)
-					{
-					for (var i = idx + 1; i < len; i++)
-						{
-						if (values[i] == values[idx])
-							return true;
-						}
+				if (idx == end)
+					return false;
 
-					return contains (++idx);
+				var val = values[idx];
+				for (var i = idx + 1; i < len; i++)
+					{
+					if (values[i] == val)
+						return true;
 					}
 
-				return false;
+				return seek (++idx);
 				};
 
-			return contains (0);
+			return seek (0);
 			}
 
 		internal static T[] Copy<T> (this T[] source, int length)
@@ -514,6 +462,13 @@ namespace WebSocketSharp
 			return idx > 0 ? original.Substring (0, idx) : original;
 			}
 
+		internal static string GetDnsSafeHost (this Uri uri, bool bracketIPv6)
+			{
+			return bracketIPv6 && uri.HostNameType == UriHostNameType.IPv6
+					 ? uri.Host
+					 : uri.DnsSafeHost;
+			}
+
 		internal static string GetMessage (this CloseStatusCode code)
 			{
 			return code == CloseStatusCode.ProtocolError
@@ -584,21 +539,6 @@ namespace WebSocketSharp
 			var val = nameAndValue.Substring (idx + 1).Trim ();
 			return unquote ? val.Unquote () : val;
 			}
-
-#if !CLIENT
-		internal static TcpListenerWebSocketContext GetWebSocketContext (this TcpClient tcpClient, string protocol, bool secure,
-#if !NETCF || BCC || SSL
-		                                                                 ServerSslConfiguration sslConfig,
-#endif
-		                                                                 Logger logger)
-			{
-			return new TcpListenerWebSocketContext (tcpClient, protocol, secure,
-#if !NETCF || BCC || SSL
-			                                        sslConfig,
-#endif
-			                                        logger);
-			}
-#endif
 
 		internal static byte[] InternalToByteArray (this ushort value, ByteOrder order)
 			{
@@ -675,18 +615,27 @@ namespace WebSocketSharp
 			for (var i = 0; i < len; i++)
 				{
 				var c = value[i];
-				if (c < 0x20 && !"\r\n\t".Contains (c))
-					return false;
+				if (c < 0x20)
+					{
+					if (!"\r\n\t".Contains (c))
+						return false;
+
+					if (c == '\n')
+						{
+						i++;
+						if (i == len)
+							break;
+
+						c = value[i];
+						if (!" \t".Contains (c))
+							return false;
+						}
+
+					continue;
+					}
 
 				if (c == 0x7f)
 					return false;
-
-				if (c == '\n' && ++i < len)
-					{
-					c = value[i];
-					if (!" \t".Contains (c))
-						return false;
-					}
 				}
 
 			return true;
@@ -696,7 +645,13 @@ namespace WebSocketSharp
 			{
 			foreach (var c in value)
 				{
-				if (c < 0x20 || c >= 0x7f || _tspecials.Contains (c))
+				if (c < 0x20)
+					return false;
+
+				if (c >= 0x7f)
+					return false;
+
+				if (_tspecials.Contains (c))
 					return false;
 				}
 
@@ -1020,6 +975,13 @@ namespace WebSocketSharp
 			return new List<TSource> (source);
 			}
 
+		internal static string ToString (this IPAddress address, bool bracketIPv6)
+			{
+			return bracketIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6
+					 ? String.Format ("[{0}]", address.ToString ())
+					 : address.ToString ();
+			}
+
 		internal static ushort ToUInt16 (this byte[] source, ByteOrder sourceOrder)
 			{
 			return BitConverter.ToUInt16 (source.ToHostOrder (sourceOrder), 0);
@@ -1034,6 +996,12 @@ namespace WebSocketSharp
 			{
 			var ret = value.TrimEnd ('/');
 			return ret.Length > 0 ? ret : "/";
+			}
+
+		internal static string TrimSlashOrBackslashFromEnd (this string value)
+			{
+			var ret = value.TrimEnd ('/', '\\');
+			return ret.Length > 0 ? ret : value[0].ToString ();
 			}
 
 		/// <summary>
@@ -1493,27 +1461,36 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Determines whether the specified <see cref="ushort"/> is in the allowable range of
-		/// the WebSocket close status code.
+		/// Determines whether the specified <see cref="ushort"/> is in the
+		/// range of the status code for the WebSocket connection close.
 		/// </summary>
 		/// <remarks>
-		/// Unallowable ranges are the following:
+		///   <para>
+		///   The ranges are the following:
+		///   </para>
 		///   <list type="bullet">
 		///     <item>
 		///       <term>
-		///       Numbers in the range 0-999 are not used.
+		///       1000-2999: These numbers are reserved for definition by
+		///       the WebSocket protocol.
 		///       </term>
 		///     </item>
 		///     <item>
 		///       <term>
-		///       Numbers greater than 4999 are out of the reserved close status code ranges.
+		///       3000-3999: These numbers are reserved for use by libraries,
+		///       frameworks, and applications.
+		///       </term>
+		///     </item>
+		///     <item>
+		///       <term>
+		///       4000-4999: These numbers are reserved for private use.
 		///       </term>
 		///     </item>
 		///   </list>
 		/// </remarks>
 		/// <returns>
-		/// <c>true</c> if <paramref name="value"/> is in the allowable range of the WebSocket
-		/// close status code; otherwise, <c>false</c>.
+		/// <c>true</c> if <paramref name="value"/> is in the range of
+		/// the status code for the close; otherwise, <c>false</c>.
 		/// </returns>
 		/// <param name="value">
 		/// A <see cref="ushort"/> to test.
@@ -1620,10 +1597,11 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Determines whether the specified <see cref="string"/> is <see langword="null"/> or empty.
+		/// Determines whether the specified string is <see langword="null"/> or
+		/// an empty string.
 		/// </summary>
 		/// <returns>
-		/// <c>true</c> if <paramref name="value"/> is <see langword="null"/> or empty;
+		/// <c>true</c> if the string is <see langword="null"/> or an empty string;
 		/// otherwise, <c>false</c>.
 		/// </returns>
 		/// <param name="value">
