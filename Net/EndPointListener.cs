@@ -135,16 +135,8 @@ namespace WebSocketSharp.Net
 					throw new ArgumentException ("No server certificate could be found.");
 
 				_secure = true;
-				_sslConfig =
-				  new ServerSslConfiguration (
-					 cert,
-					 sslConfig.ClientCertificateRequired,
-					 sslConfig.EnabledSslProtocols,
-					 sslConfig.CheckCertificateRevocation
-				  );
-
-				_sslConfig.ClientCertificateValidationCallback =
-				  sslConfig.ClientCertificateValidationCallback;
+				_sslConfig = new ServerSslConfiguration (sslConfig);
+				_sslConfig.ServerCertificate = cert;
 				}
 #endif
 

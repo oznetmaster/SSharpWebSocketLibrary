@@ -5,7 +5,7 @@
  * The MIT License
  *
  * Copyright (c) 2012-2015 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright © 2017 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -58,7 +58,7 @@ namespace WebSocketSharp.Server
 
 		private volatile bool _clean;
 		private Dictionary<string, WebSocketServiceHost> _hosts;
-		private Logger _logger;
+		private Logger _log;
 		private volatile ServerState _state;
 		private object _sync;
 		private TimeSpan _waitTime;
@@ -67,14 +67,9 @@ namespace WebSocketSharp.Server
 
 		#region Internal Constructors
 
-		internal WebSocketServiceManager ()
-			: this (new Logger ())
+		internal WebSocketServiceManager (Logger log)
 			{
-			}
-
-		internal WebSocketServiceManager (Logger logger)
-			{
-			_logger = logger;
+			_log = log;
 
 			_clean = true;
 			_hosts = new Dictionary<string, WebSocketServiceHost> ();
@@ -192,12 +187,16 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Gets a value indicating whether the inactive sessions in
+		/// Gets or sets a value indicating whether the inactive sessions in
 		/// the WebSocket services are cleaned up periodically.
 		/// </summary>
+		/// <remarks>
+		/// The set operation does nothing if the server has already started or
+		/// it is shutting down.
+		/// </remarks>
 		/// <value>
-		/// <c>true</c> if the inactive sessions in the services are
-		/// cleaned up every 60 seconds; otherwise, <c>false</c>.
+		/// <c>true</c> if the inactive sessions are cleaned up every 60 seconds;
+		/// otherwise, <c>false</c>.
 		/// </value>
 		public bool KeepClean
 			{
@@ -206,14 +205,27 @@ namespace WebSocketSharp.Server
 				return _clean;
 				}
 
-			internal set
+			set
 				{
+				string msg;
+				if (!canSet (out msg))
+					{
+					_log.Warn (msg);
+					return;
+					}
+
 				lock (_sync)
 					{
-					_clean = value;
+					if (!canSet (out msg))
+						{
+						_log.Warn (msg);
+						return;
+						}
 
 					foreach (var host in _hosts.Values)
 						host.KeepClean = value;
+
+					_clean = value;
 					}
 				}
 			}
@@ -265,11 +277,19 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Gets the wait time for the response to the WebSocket Ping or Close.
+		/// Gets or sets the time to wait for the response to the WebSocket Ping or
+		/// Close.
 		/// </summary>
+		/// <remarks>
+		/// The set operation does nothing if the server has already started or
+		/// it is shutting down.
+		/// </remarks>
 		/// <value>
-		/// A <see cref="TimeSpan"/> that represents the wait time for the response.
+		/// A <see cref="TimeSpan"/> to wait for the response.
 		/// </value>
+		/// <exception cref="ArgumentOutOfRangeException">
+		/// The value specified for a set operation is zero or less.
+		/// </exception>
 		public TimeSpan WaitTime
 			{
 			get
@@ -277,14 +297,30 @@ namespace WebSocketSharp.Server
 				return _waitTime;
 				}
 
-			internal set
+			set
 				{
+				if (value <= TimeSpan.Zero)
+					throw new ArgumentOutOfRangeException ("value", "Zero or less.");
+
+				string msg;
+				if (!canSet (out msg))
+					{
+					_log.Warn (msg);
+					return;
+					}
+
 				lock (_sync)
 					{
-					_waitTime = value;
+					if (!canSet (out msg))
+						{
+						_log.Warn (msg);
+						return;
+						}
 
 					foreach (var host in _hosts.Values)
 						host.WaitTime = value;
+
+					_waitTime = value;
 					}
 				}
 			}
@@ -296,12 +332,16 @@ namespace WebSocketSharp.Server
 		private void broadcast (Opcode opcode, byte[] data, Action completed)
 			{
 			var cache = new Dictionary<CompressionMethod, byte[]> ();
+
 			try
 				{
 				foreach (var host in Hosts)
 					{
 					if (_state != ServerState.Start)
+						{
+						_log.Error ("The server is shutting down.");
 						break;
+						}
 
 					host.Sessions.Broadcast (opcode, data, cache);
 					}
@@ -311,8 +351,8 @@ namespace WebSocketSharp.Server
 				}
 			catch (Exception ex)
 				{
-				_logger.Error (ex.Message);
-				_logger.Debug (ex.ToString ());
+				_log.Error (ex.Message);
+				_log.Debug (ex.ToString ());
 				}
 			finally
 				{
@@ -328,7 +368,10 @@ namespace WebSocketSharp.Server
 				foreach (var host in Hosts)
 					{
 					if (_state != ServerState.Start)
+						{
+						_log.Error ("The server is shutting down.");
 						break;
+						}
 
 					host.Sessions.Broadcast (opcode, stream, cache);
 					}
@@ -338,8 +381,8 @@ namespace WebSocketSharp.Server
 				}
 			catch (Exception ex)
 				{
-				_logger.Error (ex.Message);
-				_logger.Debug (ex.ToString ());
+				_log.Error (ex.Message);
+				_log.Debug (ex.ToString ());
 				}
 			finally
 				{
@@ -368,12 +411,35 @@ namespace WebSocketSharp.Server
 			foreach (var host in Hosts)
 				{
 				if (_state != ServerState.Start)
+					{
+					_log.Error ("The server is shutting down.");
 					break;
+					}
 
-				ret.Add (host.Path, host.Sessions.Broadping (frameAsBytes, timeout));
+				var res = host.Sessions.Broadping (frameAsBytes, timeout);
+				ret.Add (host.Path, res);
 				}
 
 			return ret;
+			}
+
+		private bool canSet (out string message)
+			{
+			message = null;
+
+			if (_state == ServerState.Start)
+				{
+				message = "The server has already started.";
+				return false;
+				}
+
+			if (_state == ServerState.ShuttingDown)
+				{
+				message = "The server is shutting down.";
+				return false;
+				}
+
+			return true;
 			}
 
 		#endregion
@@ -391,7 +457,7 @@ namespace WebSocketSharp.Server
 				if (_hosts.TryGetValue (path, out host))
 					throw new ArgumentException ("Already in use.", "path");
 
-				host = new WebSocketServiceHost<TBehavior> (path, creator, null, _logger);
+				host = new WebSocketServiceHost<TBehavior> (path, creator, null, _log);
 
 				if (!_clean)
 					host.KeepClean = false;
@@ -414,25 +480,6 @@ namespace WebSocketSharp.Server
 				{
 				return _hosts.TryGetValue (path, out host);
 				}
-			}
-
-		internal bool Remove (string path)
-			{
-			path = HttpUtility.UrlDecode (path).TrimSlashFromEnd ();
-
-			WebSocketServiceHost host;
-			lock (_sync)
-				{
-				if (!_hosts.TryGetValue (path, out host))
-					return false;
-
-				_hosts.Remove (path);
-				}
-
-			if (host.State == ServerState.Start)
-				host.Stop (1001, String.Empty);
-
-			return true;
 			}
 
 		internal void Start ()
@@ -459,21 +506,6 @@ namespace WebSocketSharp.Server
 				}
 			}
 
-		internal void Stop (CloseEventArgs e, bool send, bool receive)
-			{
-			lock (_sync)
-				{
-				_state = ServerState.ShuttingDown;
-
-				var bytes = send ? WebSocketFrame.CreateCloseFrame (e.PayloadData, false).ToArray () : null;
-				foreach (var host in _hosts.Values)
-					host.Sessions.Stop (e, bytes, receive);
-
-				_hosts.Clear ();
-				_state = ServerState.Stop;
-				}
-			}
-
 		#endregion
 
 		#region Public Methods
@@ -491,9 +523,14 @@ namespace WebSocketSharp.Server
 		/// the service to add.
 		/// </param>
 		/// <param name="initializer">
-		/// An <c>Action&lt;TBehavior&gt;</c> delegate that invokes
-		/// the method used to initialize a new session instance for
-		/// the service or <see langword="null"/> if not needed.
+		///   <para>
+		///   An <c>Action&lt;TBehavior&gt;</c> delegate or
+		///   <see langword="null"/> if not needed.
+		///   </para>
+		///   <para>
+		///   That delegate invokes the method called for initializing
+		///   a new session instance for the service.
+		///   </para>
 		/// </param>
 		/// <typeparam name="TBehavior">
 		/// The type of the behavior for the service. It must inherit
@@ -557,7 +594,7 @@ namespace WebSocketSharp.Server
 
 				host = new WebSocketServiceHost<TBehavior> (
 #if SSHARP
-							path, Activator.CreateInstance<TBehavior>, initializer, _logger
+							path, Activator.CreateInstance<TBehavior>, initializer, _log
 #else
 							path, () => new TBehavior (), initializer, _logger
 #endif
@@ -577,12 +614,10 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends the specified <paramref name="data"/> to
-		/// every client in the WebSocket services.
+		/// Sends <paramref name="data"/> to every client in the WebSocket services.
 		/// </summary>
 		/// <param name="data">
-		/// An array of <see cref="byte"/> that represents
-		/// the binary data to send.
+		/// An array of <see cref="byte"/> that represents the binary data to send.
 		/// </param>
 		/// <exception cref="InvalidOperationException">
 		/// The current state of the manager is not Start.
@@ -613,8 +648,7 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends the specified <paramref name="data"/> to
-		/// every client in the WebSocket services.
+		/// Sends <paramref name="data"/> to every client in the WebSocket services.
 		/// </summary>
 		/// <param name="data">
 		/// A <see cref="string"/> that represents the text data to broadcast.
@@ -658,24 +692,22 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends the specified <paramref name="data"/> asynchronously to
-		/// every client in the WebSocket services.
+		/// Sends <paramref name="data"/> asynchronously to every client in
+		/// the WebSocket services.
 		/// </summary>
 		/// <remarks>
 		/// This method does not wait for the send to be complete.
 		/// </remarks>
 		/// <param name="data">
-		/// An array of <see cref="byte"/> that represents
-		/// the binary data to send.
+		/// An array of <see cref="byte"/> that represents the binary data to send.
 		/// </param>
 		/// <param name="completed">
 		///   <para>
-		///   An <see cref="Action"/> delegate or
-		///   <see langword="null"/> if not needed.
+		///   An <see cref="Action"/> delegate or <see langword="null"/>
+		///   if not needed.
 		///   </para>
 		///   <para>
-		///   That delegate invokes the method called when
-		///   the send is complete.
+		///   The delegate invokes the method called when the send is complete.
 		///   </para>
 		/// </param>
 		/// <exception cref="InvalidOperationException">
@@ -707,8 +739,8 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends the specified <paramref name="data"/> asynchronously to
-		/// every client in the WebSocket services.
+		/// Sends <paramref name="data"/> asynchronously to every client in
+		/// the WebSocket services.
 		/// </summary>
 		/// <remarks>
 		/// This method does not wait for the send to be complete.
@@ -718,12 +750,11 @@ namespace WebSocketSharp.Server
 		/// </param>
 		/// <param name="completed">
 		///   <para>
-		///   An <see cref="Action"/> delegate or
-		///   <see langword="null"/> if not needed.
+		///   An <see cref="Action"/> delegate or <see langword="null"/>
+		///   if not needed.
 		///   </para>
 		///   <para>
-		///   That delegate invokes the method called when
-		///   the send is complete.
+		///   The delegate invokes the method called when the send is complete.
 		///   </para>
 		/// </param>
 		/// <exception cref="InvalidOperationException">
@@ -765,27 +796,29 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends the specified <paramref name="length"/> of data from
-		/// the specified <paramref name="stream"/> asynchronously to
+		/// Sends the data from <paramref name="stream"/> asynchronously to
 		/// </summary>
 		/// <remarks>
-		/// This method does not wait for the send to be complete.
+		///   <para>
+		///   The data is sent as the binary data.
+		///   </para>
+		///   <para>
+		///   This method does not wait for the send to be complete.
+		///   </para>
 		/// </remarks>
 		/// <param name="stream">
-		/// A <see cref="Stream"/> from which to read the binary data to send.
+		/// A <see cref="Stream"/> instance from which to read the data to send.
 		/// </param>
 		/// <param name="length">
-		/// An <see cref="int"/> that specifies the number of bytes to
-		/// read and send.
+		/// An <see cref="int"/> that specifies the number of bytes to send.
 		/// </param>
 		/// <param name="completed">
 		///   <para>
-		///   An <see cref="Action"/> delegate or
-		///   <see langword="null"/> if not needed.
+		///   An <see cref="Action"/> delegate or <see langword="null"/>
+		///   if not needed.
 		///   </para>
 		///   <para>
-		///   That delegate invokes the method called when
-		///   the send is complete.
+		///   The delegate invokes the method called when the send is complete.
 		///   </para>
 		/// </param>
 		/// <exception cref="InvalidOperationException">
@@ -824,10 +857,16 @@ namespace WebSocketSharp.Server
 				throw new ArgumentNullException ("stream");
 
 			if (!stream.CanRead)
-				throw new ArgumentException ("It cannot be read.", "stream");
+				{
+				var msg = "It cannot be read.";
+				throw new ArgumentException (msg, "stream");
+				}
 
 			if (length < 1)
-				throw new ArgumentException ("It is less than 1.", "length");
+				{
+				var msg = "Less than 1.";
+				throw new ArgumentException (msg, "length");
+				}
 
 			var bytes = stream.ReadBytes (length);
 
@@ -840,12 +879,7 @@ namespace WebSocketSharp.Server
 
 			if (len < length)
 				{
-				_logger.Warn (
-				  String.Format (
-					 "Only {0} byte(s) of data could be read from the specified stream.",
-					 len
-				  )
-				);
+				_log.Warn (String.Format ("Only {0} byte(s) of data could be read from the stream.", len));
 				}
 
 			if (len <= WebSocket.FragmentLength)
@@ -862,10 +896,9 @@ namespace WebSocketSharp.Server
 		///   A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c>.
 		///   </para>
 		///   <para>
-		///   It represents a collection of pairs of a service path and
-		///   another collection of pairs of a session ID and a value
-		///   indicating whether a pong has been received within a time
-		///   from its client.
+		///   It represents a collection of pairs of a service path and another
+		///   collection of pairs of a session ID and a value indicating whether
+		///   a pong has been received from the client within a time.
 		///   </para>
 		/// </returns>
 		/// <exception cref="InvalidOperationException">
@@ -884,29 +917,29 @@ namespace WebSocketSharp.Server
 			}
 
 		/// <summary>
-		/// Sends a ping with the specified <paramref name="message"/> to
-		/// every client in the WebSocket services.
+		/// Sends a ping with <paramref name="message"/> to every client in
+		/// the WebSocket services.
 		/// </summary>
 		/// <returns>
 		///   <para>
 		///   A <c>Dictionary&lt;string, Dictionary&lt;string, bool&gt;&gt;</c>.
 		///   </para>
 		///   <para>
-		///   It represents a collection of pairs of a service path and
-		///   another collection of pairs of a session ID and a value
-		///   indicating whether a pong has been received within a time
-		///   from its client.
+		///   It represents a collection of pairs of a service path and another
+		///   collection of pairs of a session ID and a value indicating whether
+		///   a pong has been received from the client within a time.
 		///   </para>
 		/// </returns>
 		/// <param name="message">
-		/// A <see cref="string"/> that represents a message to send.
-		/// The size must be 125 bytes or less in UTF-8.
+		///   <para>
+		///   A <see cref="string"/> that represents the message to send.
+		///   </para>
+		///   <para>
+		///   The size must be 125 bytes or less in UTF-8.
+		///   </para>
 		/// </param>
 		/// <exception cref="InvalidOperationException">
 		/// The current state of the manager is not Start.
-		/// </exception>
-		/// <exception cref="ArgumentNullException">
-		/// <paramref name="message"/> is <see langword="null"/>.
 		/// </exception>
 		/// <exception cref="ArgumentException">
 		/// <paramref name="message"/> could not be UTF-8-encoded.
@@ -923,8 +956,8 @@ namespace WebSocketSharp.Server
 				throw new InvalidOperationException (msg);
 				}
 
-			if (message == null)
-				throw new ArgumentNullException ("message");
+			if (message.IsNullOrEmpty ())
+				return broadping (WebSocketFrame.EmptyPingBytes, _waitTime);
 
 			byte[] bytes;
 			if (!message.TryGetUTF8EncodedBytes (out bytes))
@@ -941,6 +974,30 @@ namespace WebSocketSharp.Server
 
 			var frame = WebSocketFrame.CreatePingFrame (bytes, false);
 			return broadping (frame.ToArray (), _waitTime);
+			}
+
+		/// <summary>
+		/// Removes all WebSocket services managed by the manager.
+		/// </summary>
+		/// <remarks>
+		/// A service is stopped with close status 1001 (going away)
+		/// if it has already started.
+		/// </remarks>
+		public void Clear ()
+			{
+			List<WebSocketServiceHost> hosts = null;
+
+			lock (_sync)
+				{
+				hosts = _hosts.Values.ToList ();
+				_hosts.Clear ();
+				}
+
+			foreach (var host in hosts)
+				{
+				if (host.State == ServerState.Start)
+					host.Stop (1001, String.Empty);
+				}
 			}
 
 		/// <summary>

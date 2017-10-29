@@ -132,13 +132,6 @@ namespace WebSocketSharp.Server
 
 			set
 				{
-				string msg;
-				if (!canSet (out msg))
-					{
-					_log.Warn (msg);
-					return;
-					}
-
 				_sessions.KeepClean = value;
 				}
 			}
@@ -182,17 +175,16 @@ namespace WebSocketSharp.Server
 		public abstract Type BehaviorType { get; }
 
 		/// <summary>
-		/// Gets or sets the wait time for the response to the WebSocket Ping or Close.
+		/// Gets or sets the time to wait for the response to the WebSocket Ping or
 		/// </summary>
 		/// <remarks>
 		/// The set operation does nothing if the service has already started or
 		/// it is shutting down.
 		/// </remarks>
 		/// <value>
-		/// A <see cref="TimeSpan"/> that represents the wait time. The default value is
-		/// the same as 1 second.
+    /// A <see cref="TimeSpan"/> to wait for the response.
 		/// </value>
-		/// <exception cref="ArgumentException">
+		/// <exception cref="ArgumentOutOfRangeException">
 		/// The value specified for a set operation is zero or less.
 		/// </exception>
 		public TimeSpan WaitTime
@@ -204,42 +196,8 @@ namespace WebSocketSharp.Server
 
 			set
 				{
-				string msg;
-				if (!value.CheckWaitTime (out msg))
-					throw new ArgumentException (msg, "value");
-
-				if (!canSet (out msg))
-					{
-					_log.Warn (msg);
-					return;
-					}
-
 				_sessions.WaitTime = value;
 				}
-			}
-
-		#endregion
-
-		#region Private Methods
-
-		private bool canSet (out string message)
-			{
-			message = null;
-
-			var state = _sessions.State;
-			if (state == ServerState.Start)
-				{
-				message = "The service has already started.";
-				return false;
-				}
-
-			if (state == ServerState.ShuttingDown)
-				{
-				message = "The service is shutting down.";
-				return false;
-				}
-
-			return true;
 			}
 
 		#endregion

@@ -9,7 +9,7 @@
  *
  * Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
  * Copyright (c) 2013-2014 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright © 2017 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -82,7 +82,7 @@ namespace WebSocketSharp.Net
 		  uint nonceCount)
 			: base (scheme, parameters)
 			{
-			Parameters["username"] = credentials.UserName;
+			Parameters["username"] = credentials.Username;
 			Parameters["password"] = credentials.Password;
 			Parameters["uri"] = credentials.Domain;
 			_nonceCount = nonceCount;

@@ -1,15 +1,16 @@
 #region License
+
 /*
  * HttpBasicIdentity.cs
  *
- * This code is derived from System.Net.HttpListenerBasicIdentity.cs of Mono
- * (http://www.mono-project.com).
+ * This code is derived from HttpListenerBasicIdentity.cs (System.Net) of
+ * Mono (http://www.mono-project.com).
  *
  * The MIT License
  *
  * Copyright (c) 2005 Novell, Inc. (http://www.novell.com)
- * Copyright (c) 2014 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright (c) 2014-2017 sta.blockhead
+ * Copyright © 2017 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,59 +30,62 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 #endregion
 
 #region Authors
+
 /*
  * Authors:
  * - Gonzalo Paniagua Javier <gonzalo@novell.com>
  */
+
 #endregion
 
 using System;
 #if SSHARP
 using SSMono.Security.Principal;
+
 #else
 using System.Security.Principal;
 #endif
 
 namespace WebSocketSharp.Net
-{
-  /// <summary>
-  /// Holds the user name and password from the HTTP Basic authentication credentials.
-  /// </summary>
-  public class HttpBasicIdentity : GenericIdentity
-  {
-    #region Private Fields
+	{
+	/// <summary>
+	/// Holds the username and password from an HTTP Basic authentication attempt.
+	/// </summary>
+	public class HttpBasicIdentity : GenericIdentity
+		{
+		#region Private Fields
 
-    private string _password;
+		private string _password;
 
-    #endregion
+		#endregion
 
-    #region internal Constructors
+		#region Internal Constructors
 
-    internal HttpBasicIdentity (string username, string password)
-      : base (username, "Basic")
-    {
-      _password = password;
-    }
+		internal HttpBasicIdentity (string username, string password)
+			: base (username, "Basic")
+			{
+			_password = password;
+			}
 
-    #endregion
+		#endregion
 
-    #region Public Properties
+		#region Public Properties
 
-    /// <summary>
-    /// Gets the password from the HTTP Basic authentication credentials.
-    /// </summary>
-    /// <value>
-    /// A <see cref="string"/> that represents the password.
-    /// </value>
-    public virtual string Password {
-      get {
-        return _password;
-      }
-    }
+		/// <summary>
+		/// Gets the password from a basic authentication attempt.
+		/// </summary>
+		/// <value>
+		/// A <see cref="string"/> that represents the password.
+		/// </value>
+		public virtual string Password
+			{
+			get { return _password; }
+			}
 
-    #endregion
-  }
-}
+		#endregion
+		}
+	}

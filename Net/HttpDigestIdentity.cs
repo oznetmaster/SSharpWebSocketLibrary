@@ -4,8 +4,8 @@
  *
  * The MIT License
  *
- * Copyright (c) 2014 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright (c) 2014-2017 sta.blockhead
+ * Copyright © 2017 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,8 @@ using System.Security.Principal;
 namespace WebSocketSharp.Net
 	{
 	/// <summary>
-	/// Holds the user name and other parameters from the HTTP Digest authentication credentials.
+	/// Holds the username and other parameters from
+	/// an HTTP Digest authentication attempt.
 	/// </summary>
 	public class HttpDigestIdentity : GenericIdentity
 		{
@@ -61,7 +62,7 @@ namespace WebSocketSharp.Net
 		#region Public Properties
 
 		/// <summary>
-		/// Gets the algorithm parameter from the HTTP Digest authentication credentials.
+		/// Gets the algorithm parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the algorithm parameter.
@@ -75,7 +76,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the cnonce parameter from the HTTP Digest authentication credentials.
+		/// Gets the cnonce parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the cnonce parameter.
@@ -89,7 +90,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the nc parameter from the HTTP Digest authentication credentials.
+		/// Gets the nc parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the nc parameter.
@@ -103,7 +104,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the nonce parameter from the HTTP Digest authentication credentials.
+		/// Gets the nonce parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the nonce parameter.
@@ -117,7 +118,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the opaque parameter from the HTTP Digest authentication credentials.
+		/// Gets the opaque parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the opaque parameter.
@@ -131,7 +132,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the qop parameter from the HTTP Digest authentication credentials.
+		/// Gets the qop parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the qop parameter.
@@ -145,7 +146,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the realm parameter from the HTTP Digest authentication credentials.
+		/// Gets the realm parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the realm parameter.
@@ -159,7 +160,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the response parameter from the HTTP Digest authentication credentials.
+		/// Gets the response parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the response parameter.
@@ -173,7 +174,7 @@ namespace WebSocketSharp.Net
 			}
 
 		/// <summary>
-		/// Gets the uri parameter from the HTTP Digest authentication credentials.
+		/// Gets the uri parameter from a digest authentication attempt.
 		/// </summary>
 		/// <value>
 		/// A <see cref="string"/> that represents the uri parameter.
@@ -192,13 +193,13 @@ namespace WebSocketSharp.Net
 
 		internal bool IsValid (string password, string realm, string method, string entity)
 			{
-			var parameters = new NameValueCollection (_parameters);
-			parameters["password"] = password;
-			parameters["realm"] = realm;
-			parameters["method"] = method;
-			parameters["entity"] = entity;
+			var copied = new NameValueCollection (_parameters);
+			copied["password"] = password;
+			copied["realm"] = realm;
+			copied["method"] = method;
+			copied["entity"] = entity;
 
-			return _parameters["response"] == AuthenticationResponse.CreateRequestDigest (parameters);
+			return _parameters["response"] == AuthenticationResponse.CreateRequestDigest (copied);
 			}
 
 		#endregion
