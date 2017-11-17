@@ -1,8 +1,7 @@
 #region License
+
 /*
  * WebSocket.cs
- *
- * A C# implementation of the WebSocket interface.
  *
  * This code is derived from WebSocket.java
  * (http://github.com/adamac/Java-WebSocket-client).
@@ -31,15 +30,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 #endregion
 
 #region Contributors
+
 /*
  * Contributors:
  * - Frank Razenberg <frank@zzattack.org>
  * - David Wood <dpwood@gmail.com>
  * - Liryna <liryna.stark@gmail.com>
  */
+
 #endregion
 
 using System;
@@ -86,8 +88,14 @@ namespace WebSocketSharp
 	/// Implements the WebSocket interface.
 	/// </summary>
 	/// <remarks>
-	/// The WebSocket class provides a set of methods and properties for two-way communication using
-	/// the WebSocket protocol (<see href="http://tools.ietf.org/html/rfc6455">RFC 6455</see>).
+	///   <para>
+	///   This class provides a set of methods and properties for two-way
+	///   communication using the WebSocket protocol.
+	///   </para>
+	///   <para>
+	///   The WebSocket protocol is defined in
+	///   <see href="http://tools.ietf.org/html/rfc6455">RFC 6455</see>.
+	///   </para>
 	/// </remarks>
 	public class WebSocket : IDisposable
 		{
@@ -194,6 +202,7 @@ namespace WebSocketSharp
 		#endregion
 
 		#region Internal Constructors
+
 #if !CLIENT
 		// As server
 		internal WebSocket (HttpListenerWebSocketContext context, string protocol)
@@ -227,17 +236,25 @@ namespace WebSocketSharp
 			init ();
 			}
 #endif
+
 		#endregion
 
 		#region Public Constructors
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="WebSocket"/> class with
-		/// <paramref name="url"/> and <paramref name="protocols"/>.
+		/// <paramref name="url"/> and optionally <paramref name="protocols"/>.
 		/// </summary>
 		/// <param name="url">
-		/// A <see cref="string"/> that specifies the URL of the WebSocket
-		/// server to connect.
+		///   <para>
+		///   A <see cref="string"/> that specifies the URL to which to connect.
+		///   </para>
+		///   <para>
+		///   The scheme of the URL must be ws or wss.
+		///   </para>
+		///   <para>
+		///   The new instance uses a secure connection if the scheme is wss.
+		///   </para>
 		/// </param>
 		/// <param name="protocols">
 		///   <para>
@@ -312,10 +329,7 @@ namespace WebSocketSharp
 
 		internal CookieCollection CookieCollection
 			{
-			get
-				{
-				return _cookies;
-				}
+			get { return _cookies; }
 			}
 
 		internal bool HasMessage
@@ -331,38 +345,23 @@ namespace WebSocketSharp
 		// As server
 		internal Func<WebSocketContext, string> CustomHandshakeRequestChecker
 			{
-			get
-				{
-				return _handshakeRequestChecker;
-				}
+			get { return _handshakeRequestChecker; }
 
-			set
-				{
-				_handshakeRequestChecker = value;
-				}
+			set { _handshakeRequestChecker = value; }
 			}
 
 		// As server
 		internal bool IgnoreExtensions
 			{
-			get
-				{
-				return _ignoreExtensions;
-				}
+			get { return _ignoreExtensions; }
 
-			set
-				{
-				_ignoreExtensions = value;
-				}
+			set { _ignoreExtensions = value; }
 			}
 #endif
 
 		internal bool IsConnected
 			{
-			get
-				{
-				return _readyState == WebSocketState.Open || _readyState == WebSocketState.Closing;
-				}
+			get { return _readyState == WebSocketState.Open || _readyState == WebSocketState.Closing; }
 			}
 
 		internal DateTime LastReceivedTime
@@ -386,21 +385,18 @@ namespace WebSocketSharp
 		///   One of the <see cref="CompressionMethod"/> enum values.
 		///   </para>
 		///   <para>
-		///   It represents the compression method used to compress a message.
+		///   It specifies the compression method used to compress a message.
 		///   </para>
 		///   <para>
 		///   The default value is <see cref="CompressionMethod.None"/>.
 		///   </para>
 		/// </value>
 		/// <exception cref="InvalidOperationException">
-		/// The set operation cannot be used by servers.
+		/// The set operation is not available if this instance is not a client.
 		/// </exception>
 		public CompressionMethod Compression
 			{
-			get
-				{
-				return _compression;
-				}
+			get { return _compression; }
 
 			set
 				{
@@ -408,7 +404,7 @@ namespace WebSocketSharp
 
 				if (!_client)
 					{
-					msg = "The set operation cannot be used by servers.";
+					msg = "This instance is not a client.";
 					throw new InvalidOperationException (msg);
 					}
 
@@ -432,20 +428,27 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Gets the HTTP cookies included in the WebSocket handshake request and response.
+		/// Gets the HTTP cookies included in the handshake request/response.
 		/// </summary>
 		/// <value>
-		/// An <see cref="T:System.Collections.Generic.IEnumerable{WebSocketSharp.Net.Cookie}"/>
-		/// instance that provides an enumerator which supports the iteration over the collection of
-		/// the cookies.
+		///   <para>
+		///   An <see cref="T:System.Collections.Generic.IEnumerable{WebSocketSharp.Net.Cookie}"/>
+		///   instance.
+		///   </para>
+		///   <para>
+		///   It provides an enumerator which supports the iteration over
+		///   the collection of the cookies.
+		///   </para>
 		/// </value>
 		public IEnumerable<Cookie> Cookies
 			{
 			get
 				{
 				lock (_cookies.SyncRoot)
+					{
 					foreach (Cookie cookie in _cookies)
 						yield return cookie;
+					}
 				}
 			}
 
@@ -453,36 +456,37 @@ namespace WebSocketSharp
 		/// Gets the credentials for the HTTP authentication (Basic/Digest).
 		/// </summary>
 		/// <value>
-		/// A <see cref="NetworkCredential"/> that represents the credentials for the authentication.
-		/// The default value is <see langword="null"/>.
+		///   <para>
+		///   A <see cref="NetworkCredential"/> that represents the credentials
+		///   used to authenticate the client.
+		///   </para>
+		///   <para>
+		///   The default value is <see langword="null"/>.
+		///   </para>
 		/// </value>
 		public NetworkCredential Credentials
 			{
-			get
-				{
-				return _credentials;
-				}
+			get { return _credentials; }
 			}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether the <see cref="WebSocket"/> emits
-		/// a <see cref="OnMessage"/> event when receives a ping.
+		/// Gets or sets a value indicating whether a <see cref="OnMessage"/> event
+		/// is emitted when a ping is received.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the <see cref="WebSocket"/> emits a <see cref="OnMessage"/> event
-		/// when receives a ping; otherwise, <c>false</c>. The default value is <c>false</c>.
+		///   <para>
+		///   <c>true</c> if this instance emits a <see cref="OnMessage"/> event
+		///   when receives a ping; otherwise, <c>false</c>.
+		///   </para>
+		///   <para>
+		///   The default value is <c>false</c>.
+		///   </para>
 		/// </value>
 		public bool EmitOnPing
 			{
-			get
-				{
-				return _emitOnPing;
-				}
+			get { return _emitOnPing; }
 
-			set
-				{
-				_emitOnPing = value;
-				}
+			set { _emitOnPing = value; }
 			}
 
 		/// <summary>
@@ -495,22 +499,19 @@ namespace WebSocketSharp
 		/// </remarks>
 		/// <value>
 		///   <para>
-		///   <c>true</c> if the URL redirection for the handshake request is
-		///   allowed; otherwise, <c>false</c>.
+		///   <c>true</c> if this instance allows the URL redirection for
+		///   the handshake request; otherwise, <c>false</c>.
 		///   </para>
 		///   <para>
 		///   The default value is <c>false</c>.
 		///   </para>
 		/// </value>
 		/// <exception cref="InvalidOperationException">
-		/// The set operation cannot be used by servers.
+		/// The set operation is not available if this instance is not a client.
 		/// </exception>
 		public bool EnableRedirection
 			{
-			get
-				{
-				return _enableRedirection;
-				}
+			get { return _enableRedirection; }
 
 			set
 				{
@@ -518,7 +519,7 @@ namespace WebSocketSharp
 
 				if (!_client)
 					{
-					msg = "The set operation cannot be used by servers.";
+					msg = "This instance is not a client.";
 					throw new InvalidOperationException (msg);
 					}
 
@@ -541,70 +542,59 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Gets the WebSocket extensions selected by the server.
+		/// Gets the extensions selected by server.
 		/// </summary>
 		/// <value>
-		/// A <see cref="string"/> that represents the extensions if any.
-		/// The default value is <see cref="String.Empty"/>.
+		/// A <see cref="string"/> that will be a list of the extensions
+		/// negotiated between client and server, or an empty string if
+		/// not specified or selected.
 		/// </value>
 		public string Extensions
 			{
-			get
-				{
-				return _extensions ?? String.Empty;
-				}
+			get { return _extensions ?? String.Empty; }
 			}
 
 		/// <summary>
-		/// Gets a value indicating whether the WebSocket connection is alive.
+		/// Gets a value indicating whether the connection is alive.
 		/// </summary>
+		/// <remarks>
+		/// The get operation returns the value by using a ping/pong
+		/// if the current state of the connection is Open.
+		/// </remarks>
 		/// <value>
 		/// <c>true</c> if the connection is alive; otherwise, <c>false</c>.
 		/// </value>
 		public bool IsAlive
 			{
-			get
-				{
-				return ping (EmptyBytes);
-				}
+			get { return ping (EmptyBytes); }
 			}
 
 		/// <summary>
-		/// Gets a value indicating whether the WebSocket connection is secure.
+		/// Gets a value indicating whether a secure connection is used.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the connection is secure; otherwise, <c>false</c>.
+		/// <c>true</c> if this instance uses a secure connection; otherwise,
+		/// <c>false</c>.
 		/// </value>
 		public bool IsSecure
 			{
-			get
-				{
-				return _secure;
-				}
+			get { return _secure; }
 			}
 
 		/// <summary>
-		/// Gets the logging functions.
+		/// Gets the logging function.
 		/// </summary>
 		/// <remarks>
-		/// The default logging level is <see cref="LogLevel.Error"/>. If you would like to change it,
-		/// you should set this <c>Log.Level</c> property to any of the <see cref="LogLevel"/> enum
-		/// values.
+		/// The default logging level is <see cref="LogLevel.Error"/>.
 		/// </remarks>
 		/// <value>
-		/// A <see cref="Logger"/> that provides the logging functions.
+		/// A <see cref="Logger"/> that provides the logging function.
 		/// </value>
 		public Logger Log
 			{
-			get
-				{
-				return _logger;
-				}
+			get { return _logger; }
 
-			internal set
-				{
-				_logger = value;
-				}
+			internal set { _logger = value; }
 			}
 
 		/// <summary>
@@ -701,39 +691,36 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Gets the WebSocket subprotocol selected by the server.
+		/// Gets the name of the subprotocol selected by server.
 		/// </summary>
 		/// <value>
-		/// A <see cref="string"/> that represents the subprotocol if any.
-		/// The default value is <see cref="String.Empty"/>.
+		/// A <see cref="string"/> that will be one of the names of the subprotocols
+		/// specified by client, or an empty string if not specified or selected.
 		/// </value>
 		public string Protocol
 			{
-			get
-				{
-				return _protocol ?? String.Empty;
-				}
+			get { return _protocol ?? String.Empty; }
 
-			internal set
-				{
-				_protocol = value;
-				}
+			internal set { _protocol = value; }
 			}
 
 		/// <summary>
-		/// Gets the state of the WebSocket connection.
+		/// Gets the current state of the connection.
 		/// </summary>
 		/// <value>
-		/// One of the <see cref="WebSocketState"/> enum values that indicates
-		/// the current state of the connection. The default value is
-		/// <see cref="WebSocketState.Connecting"/>.
+		///   <para>
+		///   One of the <see cref="WebSocketState"/> enum values.
+		///   </para>
+		///   <para>
+		///   It indicates the current state of the connection.
+		///   </para>
+		///   <para>
+		///   The default value is <see cref="WebSocketState.Connecting"/>.
+		///   </para>
 		/// </value>
 		public WebSocketState ReadyState
 			{
-			get
-				{
-				return _readyState;
-				}
+			get { return _readyState; }
 			}
 
 #if !NETCF || BCC || SSL
@@ -772,19 +759,16 @@ namespace WebSocketSharp
 					throw new InvalidOperationException (msg);
 					}
 
-				if (_sslConfig == null)
-					_sslConfig = new ClientSslConfiguration (_uri.DnsSafeHost);
-
-				return _sslConfig;
+				return getSslConfiguration ();
 				}
 			}
 #endif
 
 		/// <summary>
-		/// Gets the WebSocket URL used to connect, or accepted.
+		/// Gets the URL to which to connect.
 		/// </summary>
 		/// <value>
-		/// A <see cref="Uri"/> that represents the WebSocket URL to connect.
+		/// A <see cref="Uri"/> that represents the URL to which to connect.
 		/// </value>
 		public Uri Url
 			{
@@ -810,7 +794,7 @@ namespace WebSocketSharp
 		///   A <see cref="TimeSpan"/> to wait for the response.
 		///   </para>
 		///   <para>
-		///   The default value is the same as 5 seconds if the instance is
+		///   The default value is the same as 5 seconds if this instance is
 		///   a client.
 		///   </para>
 		/// </value>
@@ -819,10 +803,7 @@ namespace WebSocketSharp
 		/// </exception>
 		public TimeSpan WaitTime
 			{
-			get
-				{
-				return _waitTime;
-				}
+			get { return _waitTime; }
 
 			set
 				{
@@ -1115,75 +1096,12 @@ namespace WebSocketSharp
 			return checkIfAvailable (connecting, open, closing, closed, out message);
 			}
 
-		private static bool checkParametersForSetCredentials (string username, string password, out string message)
-			{
-			message = null;
-
-			if (username.IsNullOrEmpty ())
-				return true;
-
-			if (username.Contains (':') || !username.IsText ())
-				{
-				message = "'username' contains an invalid character.";
-				return false;
-				}
-
-			if (password.IsNullOrEmpty ())
-				return true;
-
-			if (!password.IsText ())
-				{
-				message = "'password' contains an invalid character.";
-				return false;
-				}
-
-			return true;
-			}
-
-		private static bool checkParametersForSetProxy (string url, string username, string password, out string message)
-			{
-			message = null;
-
-			if (url.IsNullOrEmpty ())
-				return true;
-
-			Uri uri;
-			if (!Uri.TryCreate (url, UriKind.Absolute, out uri)
-				 || uri.Scheme != "http"
-				 || uri.Segments.Length > 1
-			)
-				{
-				message = "'url' is an invalid URL.";
-				return false;
-				}
-
-			if (username.IsNullOrEmpty ())
-				return true;
-
-			if (username.Contains (':') || !username.IsText ())
-				{
-				message = "'username' contains an invalid character.";
-				return false;
-				}
-
-			if (password.IsNullOrEmpty ())
-				return true;
-
-			if (!password.IsText ())
-				{
-				message = "'password' contains an invalid character.";
-				return false;
-				}
-
-			return true;
-			}
-
 		private static bool checkProtocols (string[] protocols, out string message)
 			{
 			message = null;
 
 			Func<string, bool> cond = protocol => protocol.IsNullOrEmpty ()
-															  || !protocol.IsToken ();
+			                                      || !protocol.IsToken ();
 
 			if (protocols.Contains (cond))
 				{
@@ -1259,7 +1177,8 @@ namespace WebSocketSharp
 				}
 
 			if (code == 1005)
-				{ // == no status
+				{
+				// == no status
 				close (PayloadData.Empty, true, true, false);
 				return;
 				}
@@ -1328,7 +1247,8 @@ namespace WebSocketSharp
 				}
 
 			if (code == 1005)
-				{ // == no status
+				{
+				// == no status
 				closeAsync (PayloadData.Empty, true, true, false);
 				return;
 				}
@@ -1341,8 +1261,8 @@ namespace WebSocketSharp
 			{
 			Action<PayloadData, bool, bool, bool> closer = close;
 			closer.BeginInvoke (
-			  payloadData, send, receive, received, ar => closer.EndInvoke (ar), null
-			);
+				payloadData, send, receive, received, ar => closer.EndInvoke (ar), null
+				);
 			}
 
 		private bool closeHandshake (byte[] frameAsBytes, bool receive, bool received)
@@ -1355,7 +1275,7 @@ namespace WebSocketSharp
 
 			var ret = sent && received;
 			_logger.Debug (
-			  String.Format ("Was clean?: {0}\nsent: {1} received: {2}", ret, sent, received));
+				String.Format ("Was clean?: {0}\nsent: {1} received: {2}", ret, sent, received));
 
 			return ret;
 			}
@@ -1379,10 +1299,10 @@ namespace WebSocketSharp
 			var ret = sent && received;
 
 			_logger.Debug (
-			  String.Format (
-				 "Was clean?: {0}\n  sent: {1}\n  received: {2}", ret, sent, received
-			  )
-			);
+				String.Format (
+					"Was clean?: {0}\n  sent: {1}\n  received: {2}", ret, sent, received
+					)
+				);
 
 			return ret;
 			}
@@ -1438,7 +1358,7 @@ namespace WebSocketSharp
 			if (_compression != CompressionMethod.None)
 				{
 				var str = _compression.ToExtensionString (
-				  "server_no_context_takeover", "client_no_context_takeover");
+					"server_no_context_takeover", "client_no_context_takeover");
 
 				buff.AppendFormat ("{0}, ", str);
 				}
@@ -1531,7 +1451,7 @@ namespace WebSocketSharp
 			{
 			message = null;
 			return _handshakeRequestChecker == null
-					 || (message = _handshakeRequestChecker (context)) == null;
+			       || (message = _handshakeRequestChecker (context)) == null;
 			}
 
 		private MessageEventArgs dequeueFromMessageEventQueue ()
@@ -1581,8 +1501,8 @@ namespace WebSocketSharp
 		private void fatal (string message, Exception exception)
 			{
 			var code = exception is WebSocketException
-						  ? ((WebSocketException)exception).Code
-						  : CloseStatusCode.Abnormal;
+				? ((WebSocketException)exception).Code
+				: CloseStatusCode.Abnormal;
 
 			fatal (message, (ushort)code);
 			}
@@ -1596,6 +1516,14 @@ namespace WebSocketSharp
 		private void fatal (string message, CloseStatusCode code)
 			{
 			fatal (message, (ushort)code);
+			}
+
+		private ClientSslConfiguration getSslConfiguration ()
+			{
+			if (_sslConfig == null)
+				_sslConfig = new ClientSslConfiguration (_uri.DnsSafeHost);
+
+			return _sslConfig;
 			}
 
 		private void init ()
@@ -1649,8 +1577,7 @@ namespace WebSocketSharp
 
 					e = _messageEventQueue.Dequeue ();
 					}
-				}
-			while (true);
+				} while (true);
 			}
 
 #if !CLIENT
@@ -1766,10 +1693,10 @@ namespace WebSocketSharp
 		private bool processDataFrame (WebSocketFrame frame)
 			{
 			enqueueToMessageEventQueue (
-			  frame.IsCompressed
-			  ? new MessageEventArgs (
-				  frame.Opcode, frame.PayloadData.ApplicationData.Decompress (_compression))
-			  : new MessageEventArgs (frame));
+				frame.IsCompressed
+					? new MessageEventArgs (
+						frame.Opcode, frame.PayloadData.ApplicationData.Decompress (_compression))
+					: new MessageEventArgs (frame));
 
 			return true;
 			}
@@ -1794,8 +1721,8 @@ namespace WebSocketSharp
 				using (_fragmentsBuffer)
 					{
 					var data = _fragmentsCompressed
-								? _fragmentsBuffer.DecompressToArray (_compression)
-								: _fragmentsBuffer.ToArray ();
+						? _fragmentsBuffer.DecompressToArray (_compression)
+						: _fragmentsBuffer.ToArray ();
 
 					enqueueToMessageEventQueue (new MessageEventArgs (_fragmentsOpcode, data));
 					}
@@ -1874,16 +1801,16 @@ namespace WebSocketSharp
 
 			frame.Unmask ();
 			return frame.IsFragment
-					? processFragmentFrame (frame)
-					: frame.IsData
-					 ? processDataFrame (frame)
-					 : frame.IsPing
+				? processFragmentFrame (frame)
+				: frame.IsData
+					? processDataFrame (frame)
+					: frame.IsPing
 						? processPingFrame (frame)
 						: frame.IsPong
-						 ? processPongFrame (frame)
-						 : frame.IsClose
-							? processCloseFrame (frame)
-							: processUnsupportedFrame (frame);
+							? processPongFrame (frame)
+							: frame.IsClose
+								? processCloseFrame (frame)
+								: processUnsupportedFrame (frame);
 			}
 
 #if !CLIENT
@@ -1903,11 +1830,11 @@ namespace WebSocketSharp
 					{
 					_compression = CompressionMethod.Deflate;
 					buff.AppendFormat (
-					  "{0}, ",
-					  _compression.ToExtensionString (
-						 "client_no_context_takeover", "server_no_context_takeover"
-					  )
-					);
+						"{0}, ",
+						_compression.ToExtensionString (
+							"client_no_context_takeover", "server_no_context_takeover"
+							)
+						);
 
 					comp = true;
 					}
@@ -2059,22 +1986,22 @@ namespace WebSocketSharp
 			if (len == 0)
 				return send (Fin.Final, opcode, EmptyBytes, false);
 
-			var quo = len / FragmentLength;
-			var rem = (int)(len % FragmentLength);
+			var quo = len/FragmentLength;
+			var rem = (int)(len%FragmentLength);
 
 			byte[] buff = null;
 			if (quo == 0)
 				{
 				buff = new byte[rem];
 				return stream.Read (buff, 0, rem) == rem
-						 && send (Fin.Final, opcode, buff, compressed);
+				       && send (Fin.Final, opcode, buff, compressed);
 				}
 
 			if (quo == 1 && rem == 0)
 				{
 				buff = new byte[FragmentLength];
 				return stream.Read (buff, 0, FragmentLength) == FragmentLength
-						 && send (Fin.Final, opcode, buff, compressed);
+				       && send (Fin.Final, opcode, buff, compressed);
 				}
 
 			/* Send fragments */
@@ -2082,7 +2009,7 @@ namespace WebSocketSharp
 			// Begin
 			buff = new byte[FragmentLength];
 			var sent = stream.Read (buff, 0, FragmentLength) == FragmentLength
-						  && send (Fin.More, opcode, buff, compressed);
+			           && send (Fin.More, opcode, buff, compressed);
 
 			if (!sent)
 				return false;
@@ -2103,7 +2030,7 @@ namespace WebSocketSharp
 				buff = new byte[rem];
 
 			return stream.Read (buff, 0, rem) == rem
-					 && send (Fin.Final, Opcode.Cont, buff, false);
+			       && send (Fin.Final, Opcode.Cont, buff, false);
 			}
 
 		private bool send (Fin fin, Opcode opcode, byte[] data, bool compressed)
@@ -2126,24 +2053,24 @@ namespace WebSocketSharp
 #if SSHARP
 			Func<Opcode, Stream, bool> sender = send;
 			sender.BeginInvokeEx (
-			  ar =>
-				  {
-				  try
-					  {
-					  var sent = sender.EndInvokeEx<bool> (ar);
-					  if (completed != null)
-						  completed (sent);
-					  }
-				  catch (Exception ex)
-					  {
-					  _logger.Error (ex.ToString ());
-					  error ("An error has occurred during the callback for an async send.", ex);
-					  }
-				  },
-			  null,
-			  opcode,
-			  stream
-			);
+				ar =>
+					{
+					try
+						{
+						var sent = sender.EndInvokeEx<bool> (ar);
+						if (completed != null)
+							completed (sent);
+						}
+					catch (Exception ex)
+						{
+						_logger.Error (ex.ToString ());
+						error ("An error has occurred during the callback for an async send.", ex);
+						}
+					},
+				null,
+				opcode,
+				stream
+				);
 #elif NETCF
 			ThreadPool.QueueUserWorkItem (o =>
 				{
@@ -2224,7 +2151,7 @@ namespace WebSocketSharp
 					}
 
 				if (_credentials != null &&
-					(!_preAuth || _authChallenge.Scheme == AuthenticationSchemes.Digest))
+				    (!_preAuth || _authChallenge.Scheme == AuthenticationSchemes.Digest))
 					{
 					if (res.HasConnectionClose)
 						{
@@ -2300,7 +2227,7 @@ namespace WebSocketSharp
 				{
 				var chal = res.Headers["Proxy-Authenticate"];
 				_logger.Warn (
-				  String.Format ("Received a proxy authentication requirement for '{0}'.", chal));
+					String.Format ("Received a proxy authentication requirement for '{0}'.", chal));
 
 				if (chal.IsNullOrEmpty ())
 					throw new WebSocketException ("No proxy authentication challenge is specified.");
@@ -2316,9 +2243,9 @@ namespace WebSocketSharp
 						releaseClientResources ();
 						_tcpClient = new TcpClient (_proxyUri.DnsSafeHost, _proxyUri.Port
 #if SSHARP
-, 8192
+							, 8192
 #endif
-);
+							);
 #if SSHARP
 						_tcpClient.ConnectToServer ();
 #endif
@@ -2339,7 +2266,7 @@ namespace WebSocketSharp
 
 			if (res.StatusCode[0] != '2')
 				throw new WebSocketException (
-				  "The proxy has failed a connection to the requested host and port.");
+					"The proxy has failed a connection to the requested host and port.");
 			}
 
 		// As client
@@ -2350,7 +2277,7 @@ namespace WebSocketSharp
 #if SSHARP
 				_tcpClient = new TcpClient (new IPEndPoint (DnsEx.GetHostAddresses (_proxyUri.DnsSafeHost)[0], _proxyUri.Port), 8192)
 					{
-						Nagle = true
+					Nagle = true
 					};
 
 				_tcpClient.ConnectToServer ();
@@ -2368,7 +2295,7 @@ namespace WebSocketSharp
 #if SSHARP
 				_tcpClient = new TCPClient (new IPEndPoint (DnsEx.GetHostAddresses (_uri.DnsSafeHost)[0], _uri.Port), 8192)
 					{
-						Nagle = true
+					Nagle = true
 					};
 				_tcpClient.ConnectToServer ();
 #else
@@ -2383,25 +2310,25 @@ namespace WebSocketSharp
 #if !NETCF || BCC || SSL
 			if (_secure)
 				{
-				var conf = SslConfiguration;
+				var conf = getSslConfiguration ();
 				var host = conf.TargetHost;
 				if (host != _uri.DnsSafeHost)
 					throw new WebSocketException (
-					  CloseStatusCode.TlsHandshakeFailure, "An invalid host name is specified.");
+						CloseStatusCode.TlsHandshakeFailure, "An invalid host name is specified.");
 
 				try
 					{
 					var sslStream = new SslStream (
-					  _stream,
-					  false,
-					  conf.ServerCertificateValidationCallback,
-					  conf.ClientCertificateSelectionCallback);
+						_stream,
+						false,
+						conf.ServerCertificateValidationCallback,
+						conf.ClientCertificateSelectionCallback);
 
 					sslStream.AuthenticateAsClient (
-					  host,
-					  conf.ClientCertificates,
-					  conf.EnabledSslProtocols,
-					  conf.CheckCertificateRevocation);
+						host,
+						conf.ClientCertificates,
+						conf.EnabledSslProtocols,
+						conf.CheckCertificateRevocation);
 
 					_stream = sslStream;
 					}
@@ -2424,7 +2351,7 @@ namespace WebSocketSharp
 			Action receive = null;
 			receive =
 				() =>
-					 WebSocketFrame.ReadFrameAsync (
+					WebSocketFrame.ReadFrameAsync (
 						_stream,
 						false,
 						frame =>
@@ -2453,8 +2380,7 @@ namespace WebSocketSharp
 							_logger.Fatal (ex.ToString ());
 							fatal ("An exception has occurred while receiving.", ex);
 							}
-
-					 );
+						);
 
 			receive ();
 			}
@@ -2502,15 +2428,15 @@ namespace WebSocketSharp
 
 					var method = _compression.ToExtensionString ();
 					var invalid =
-					  ext.SplitHeaderValue (';').Contains (
-						 t =>
-							 {
-							 t = t.Trim ();
-							 return t != method
-									  && t != "server_no_context_takeover"
-									  && t != "client_no_context_takeover";
-							 }
-					  );
+						ext.SplitHeaderValue (';').Contains (
+							t =>
+								{
+								t = t.Trim ();
+								return t != method
+								       && t != "server_no_context_takeover"
+								       && t != "client_no_context_takeover";
+								}
+							);
 
 					if (invalid)
 						return false;
@@ -2604,16 +2530,16 @@ namespace WebSocketSharp
 
 			var sent = frameAsBytes != null && sendBytes (frameAsBytes);
 			var received = sent && _receivingExited != null
-								? _receivingExited.WaitOne (_waitTime)
-								: false;
+				? _receivingExited.WaitOne (_waitTime)
+				: false;
 
 			var res = sent && received;
 
 			_logger.Debug (
-			  String.Format (
-				 "Was clean?: {0}\n  sent: {1}\n  received: {2}", res, sent, received
-			  )
-			);
+				String.Format (
+					"Was clean?: {0}\n  sent: {1}\n  received: {2}", res, sent, received
+					)
+				);
 
 			releaseServerResources ();
 			releaseCommonResources ();
@@ -2772,6 +2698,7 @@ namespace WebSocketSharp
 				}
 			}
 #endif
+
 		#endregion
 
 		#region Public Methods
@@ -2823,12 +2750,12 @@ namespace WebSocketSharp
 #if SSHARP
 			Func<bool> acceptor = accept;
 			acceptor.BeginInvokeEx (
-			  ar =>
-				  {
-				  if (acceptor.EndInvokeEx<bool> (ar))
-					  open ();
-				  },
-			  null);
+				ar =>
+					{
+					if (acceptor.EndInvokeEx<bool> (ar))
+						open ();
+					},
+				null);
 #elif NETCF
 			ThreadPool.QueueUserWorkItem (o =>
 				{
@@ -2961,7 +2888,7 @@ namespace WebSocketSharp
 				throw new ArgumentException (msg, "code");
 				}
 
-			close ((ushort) code, String.Empty);
+			close ((ushort)code, String.Empty);
 			}
 
 		/// <summary>
@@ -3148,7 +3075,7 @@ namespace WebSocketSharp
 
 			if (reason.IsNullOrEmpty ())
 				{
-				close ((ushort) code, String.Empty);
+				close ((ushort)code, String.Empty);
 				return;
 				}
 
@@ -3171,7 +3098,7 @@ namespace WebSocketSharp
 				throw new ArgumentOutOfRangeException ("reason", msg);
 				}
 
-			close ((ushort) code, reason);
+			close ((ushort)code, reason);
 			}
 
 		/// <summary>
@@ -3304,7 +3231,7 @@ namespace WebSocketSharp
 				throw new ArgumentException (msg, "code");
 				}
 
-			closeAsync ((ushort) code, String.Empty);
+			closeAsync ((ushort)code, String.Empty);
 			}
 
 		/// <summary>
@@ -3575,12 +3502,12 @@ namespace WebSocketSharp
 #if SSHARP
 			Func<bool> connector = connect;
 			connector.BeginInvokeEx (
-			  ar =>
-				  {
-				  if (connector.EndInvokeEx<bool> (ar))
-					  open ();
-				  },
-			  null);
+				ar =>
+					{
+					if (connector.EndInvokeEx<bool> (ar))
+						open ();
+					},
+				null);
 #elif NETCF
 			ThreadPool.QueueUserWorkItem (o =>
 				{
@@ -3896,11 +3823,11 @@ namespace WebSocketSharp
 			if (len < length)
 				{
 				_logger.Warn (
-				  String.Format (
-					 "Only {0} byte(s) of data could be read from the stream.",
-					 len
-				  )
-				);
+					String.Format (
+						"Only {0} byte(s) of data could be read from the stream.",
+						len
+						)
+					);
 				}
 
 			send (Opcode.Binary, new MemoryStream (bytes));
@@ -4241,40 +4168,45 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Sets an HTTP <paramref name="cookie"/> to send with the WebSocket handshake request
-		/// to the server.
+		/// Sets an HTTP cookie to send with the handshake request.
 		/// </summary>
 		/// <remarks>
-		/// This method is not available in a server.
+		/// This method does nothing if the connection has already been
+		/// established or it is closing.
 		/// </remarks>
 		/// <param name="cookie">
-		/// A <see cref="Cookie"/> that represents a cookie to send.
+		/// A <see cref="Cookie"/> that represents the cookie to send.
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// This instance is not a client.
+		/// </exception>
+		/// <exception cref="ArgumentNullException">
+		/// <paramref name="cookie"/> is <see langword="null"/>.
+		/// </exception>
 		public void SetCookie (Cookie cookie)
 			{
-			string msg;
-			if (!checkIfAvailable (true, false, true, false, false, true, out msg))
+			string msg = null;
+			if (!_client)
 				{
-				_logger.Error (msg);
-				error ("An error has occurred in setting a cookie.", null);
+				msg = "This instance is not a client.";
+				throw new InvalidOperationException (msg);
+				}
+
+			if (cookie == null)
+				throw new ArgumentNullException ("cookie");
+
+			if (!canSet (out msg))
+				{
+				_logger.Warn (msg);
 
 				return;
 				}
 
 			lock (_forState)
 				{
-				if (!checkIfAvailable (true, false, false, true, out msg))
+				if (!canSet (out msg))
 					{
-					_logger.Error (msg);
-					error ("An error has occurred in setting a cookie.", null);
-
-					return;
-					}
-
-				if (cookie == null)
-					{
-					_logger.Error ("'cookie' is null.");
-					error ("An error has occurred in setting a cookie.", null);
+					_logger.Warn (msg);
 
 					return;
 					}
@@ -4285,62 +4217,94 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Sets a pair of <paramref name="username"/> and <paramref name="password"/> for
-		/// the HTTP authentication (Basic/Digest).
+		/// Sets the credentials for the HTTP authentication (Basic/Digest).
 		/// </summary>
 		/// <remarks>
-		/// This method is not available in a server.
+		/// This method does nothing if the connection has already been
+		/// established or it is closing.
 		/// </remarks>
 		/// <param name="username">
 		///   <para>
-		///   A <see cref="string"/> that represents the user name used to authenticate.
+		///   A <see cref="string"/> that represents the username associated with
+		///   the credentials.
 		///   </para>
 		///   <para>
-		///   If <paramref name="username"/> is <see langword="null"/> or empty,
-		///   the credentials will be initialized and not be sent.
+		///   <see langword="null"/> or an empty string if initializes
+		///   the credentials.
 		///   </para>
 		/// </param>
 		/// <param name="password">
-		/// A <see cref="string"/> that represents the password for <paramref name="username"/>
-		/// used to authenticate.
+		///   <para>
+		///   A <see cref="string"/> that represents the password for the username
+		///   associated with the credentials.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> or an empty string if not necessary.
+		///   </para>
 		/// </param>
 		/// <param name="preAuth">
-		/// <c>true</c> if the <see cref="WebSocket"/> sends the credentials for
-		/// the Basic authentication with the first handshake request to the server;
-		/// otherwise, <c>false</c>.
+		/// <c>true</c> if sends the credentials for the Basic authentication in
+		/// advance with the first handshake request; otherwise, <c>false</c>.
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// This instance is not a client.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="username"/> contains an invalid character.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="password"/> contains an invalid character.
+		///   </para>
+		/// </exception>
 		public void SetCredentials (string username, string password, bool preAuth)
 			{
-			string msg;
-			if (!checkIfAvailable (true, false, true, false, false, true, out msg))
-				{
-				_logger.Error (msg);
-				error ("An error has occurred in setting the credentials.", null);
+			string msg = null;
 
-				return;
+			if (!_client)
+				{
+				msg = "This instance is not a client.";
+				throw new InvalidOperationException (msg);
 				}
 
-			if (!checkParametersForSetCredentials (username, password, out msg))
+			if (!username.IsNullOrEmpty ())
 				{
-				_logger.Error (msg);
-				error ("An error has occurred in setting the credentials.", null);
+				if (username.Contains (':') || !username.IsText ())
+					{
+					msg = "It contains an invalid character.";
+					throw new ArgumentException (msg, "username");
+					}
+				}
 
+			if (!password.IsNullOrEmpty ())
+				{
+				if (!password.IsText ())
+					{
+					msg = "It contains an invalid character.";
+					throw new ArgumentException (msg, "password");
+					}
+				}
+
+			if (!canSet (out msg))
+				{
+				_logger.Warn (msg);
 				return;
 				}
 
 			lock (_forState)
 				{
-				if (!checkIfAvailable (true, false, false, true, out msg))
+				if (!canSet (out msg))
 					{
-					_logger.Error (msg);
-					error ("An error has occurred in setting the credentials.", null);
+					_logger.Warn (msg);
 
 					return;
 					}
 
 				if (username.IsNullOrEmpty ())
 					{
-					_logger.Warn ("The credentials are initialized.");
 					_credentials = null;
 					_preAuth = false;
 
@@ -4353,90 +4317,160 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Sets the HTTP proxy server URL to connect through, and if necessary, a pair of
-		/// <paramref name="username"/> and <paramref name="password"/> for the proxy server
-		/// authentication (Basic/Digest).
+		/// Sets the URL of the HTTP proxy server through which to connect and
+		/// the credentials for the HTTP proxy authentication (Basic/Digest).
 		/// </summary>
 		/// <remarks>
-		/// This method is not available in a server.
+		/// This method does nothing if the connection has already been
+		/// established or it is closing.
 		/// </remarks>
 		/// <param name="url">
 		///   <para>
-		///   A <see cref="string"/> that represents the HTTP proxy server URL to
-		///   connect through. The syntax must be http://&lt;host&gt;[:&lt;port&gt;].
+		///   A <see cref="string"/> that represents the URL of the proxy server
+		///   through which to connect.
 		///   </para>
 		///   <para>
-		///   If <paramref name="url"/> is <see langword="null"/> or empty,
-		///   the url and credentials for the proxy will be initialized,
-		///   and the <see cref="WebSocket"/> will not use the proxy to
-		///   connect through.
+		///   The syntax is http://&lt;host&gt;[:&lt;port&gt;].
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> or an empty string if initializes the URL and
+		///   the credentials.
 		///   </para>
 		/// </param>
 		/// <param name="username">
 		///   <para>
-		///   A <see cref="string"/> that represents the user name used to authenticate.
+		///   A <see cref="string"/> that represents the username associated with
+		///   the credentials.
 		///   </para>
 		///   <para>
-		///   If <paramref name="username"/> is <see langword="null"/> or empty,
-		///   the credentials for the proxy will be initialized and not be sent.
+		///   <see langword="null"/> or an empty string if the credentials are not
+		///   necessary.
 		///   </para>
 		/// </param>
 		/// <param name="password">
-		/// A <see cref="string"/> that represents the password for <paramref name="username"/>
-		/// used to authenticate.
+		///   <para>
+		///   A <see cref="string"/> that represents the password for the username
+		///   associated with the credentials.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> or an empty string if not necessary.
+		///   </para>
 		/// </param>
+		/// <exception cref="InvalidOperationException">
+		/// This instance is not a client.
+		/// </exception>
+		/// <exception cref="ArgumentException">
+		///   <para>
+		///   <paramref name="url"/> is not an absolute URI string.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   The scheme of <paramref name="url"/> is not http.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="url"/> includes the path segments.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="username"/> contains an invalid character.
+		///   </para>
+		///   <para>
+		///   -or-
+		///   </para>
+		///   <para>
+		///   <paramref name="password"/> contains an invalid character.
+		///   </para>
+		/// </exception>
 		public void SetProxy (string url, string username, string password)
 			{
-			string msg;
-			if (!checkIfAvailable (true, false, true, false, false, true, out msg))
-				{
-				_logger.Error (msg);
-				error ("An error has occurred in setting the proxy.", null);
+			string msg = null;
 
-				return;
+			if (!_client)
+				{
+				msg = "This instance is not a client.";
+				throw new InvalidOperationException (msg);
 				}
 
-			if (!checkParametersForSetProxy (url, username, password, out msg))
-				{
-				_logger.Error (msg);
-				error ("An error has occurred in setting the proxy.", null);
+			Uri uri = null;
 
+			if (!url.IsNullOrEmpty ())
+				{
+				if (!Uri.TryCreate (url, UriKind.Absolute, out uri))
+					{
+					msg = "Not an absolute URI string.";
+					throw new ArgumentException (msg, "url");
+					}
+
+				if (uri.Scheme != "http")
+					{
+					msg = "The scheme part is not http.";
+					throw new ArgumentException (msg, "url");
+					}
+
+				if (uri.Segments.Length > 1)
+					{
+					msg = "It includes the path segments.";
+					throw new ArgumentException (msg, "url");
+					}
+				}
+
+			if (!username.IsNullOrEmpty ())
+				{
+				if (username.Contains (':') || !username.IsText ())
+					{
+					msg = "It contains an invalid character.";
+					throw new ArgumentException (msg, "username");
+					}
+				}
+
+			if (!password.IsNullOrEmpty ())
+				{
+				if (!password.IsText ())
+					{
+					msg = "It contains an invalid character.";
+					throw new ArgumentException (msg, "password");
+					}
+				}
+
+			if (!canSet (out msg))
+				{
+				_logger.Warn (msg);
 				return;
 				}
 
 			lock (_forState)
 				{
-				if (!checkIfAvailable (true, false, false, true, out msg))
+				if (!canSet (out msg))
 					{
-					_logger.Error (msg);
-					error ("An error has occurred in setting the proxy.", null);
-
+					_logger.Warn (msg);
 					return;
 					}
 
 				if (url.IsNullOrEmpty ())
 					{
-					_logger.Warn ("The url and credentials for the proxy are initialized.");
 					_proxyUri = null;
 					_proxyCredentials = null;
 
 					return;
 					}
 
-				_proxyUri = new Uri (url);
-
-				if (username.IsNullOrEmpty ())
-					{
-					_logger.Warn ("The credentials for the proxy are initialized.");
-					_proxyCredentials = null;
-
-					return;
-					}
-
-				_proxyCredentials =
-				  new NetworkCredential (
-					 username, password, String.Format ("{0}:{1}", _uri.DnsSafeHost, _uri.Port)
-				  );
+				_proxyUri = uri;
+				_proxyCredentials = !username.IsNullOrEmpty ()
+					? new NetworkCredential (
+						username,
+						password,
+						String.Format (
+							"{0}:{1}", _uri.DnsSafeHost, _uri.Port
+							)
+						)
+					: null;
 				}
 			}
 
