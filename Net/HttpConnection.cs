@@ -93,8 +93,10 @@ namespace WebSocketSharp.Net
 		private HttpListener _lastListener;
 		private LineState _lineState;
 		private EndPointListener _listener;
+		private IPEndPoint _localEndPoint;
 		private ResponseStream _outputStream;
 		private int _position;
+		private IPEndPoint _remoteEndPoint;
 		private MemoryStream _requestBuffer;
 		private int _reuses;
 		private bool _secure;
@@ -113,25 +115,28 @@ namespace WebSocketSharp.Net
 			{
 			_socket = socket;
 			_listener = listener;
-			_secure = listener.IsSecure;
 
 			Stream netStream = new NetworkStream (socket, false);
 #if BUFFERED
 			netStream = new BufferedNetworkStream ((NetworkStream)netStream);
 #endif
 #if !NETCF || BCC || SSL
-			if (_secure)
+			if (listener.IsSecure)
 				{
-				var conf = listener.SslConfiguration;
-				var sslStream = new SslStream (netStream, false, conf.ClientCertificateValidationCallback);
-				sslStream.AuthenticateAsServer (conf.ServerCertificate, conf.ClientCertificateRequired, conf.EnabledSslProtocols, conf.CheckCertificateRevocation);
+				var sslConf = listener.SslConfiguration;
+				var sslStream = new SslStream (netStream, false, sslConf.ClientCertificateValidationCallback);
 
+				sslStream.AuthenticateAsServer (sslConf.ServerCertificate, sslConf.ClientCertificateRequired, sslConf.EnabledSslProtocols, sslConf.CheckCertificateRevocation);
+
+				_secure = true;
 				_stream = sslStream;
 				}
 			else
 #endif
 				_stream = netStream;
 
+			_localEndPoint = socket.LocalEndPoint;
+			_remoteEndPoint = socket.RemoteEndPoint;
 			_sync = new object ();
 			_timeout = 90000; // 90k ms for first request, 15k ms from then on.
 			_timeoutCanceled = new Dictionary<int, bool> ();
@@ -149,6 +154,14 @@ namespace WebSocketSharp.Net
 			get { return _socket == null; }
 			}
 
+		public bool IsLocal
+			{
+			get
+				{
+				return ((IPEndPoint)_remoteEndPoint).Address.IsLocal ();
+				}
+			}
+
 		public bool IsSecure
 			{
 			get { return _secure; }
@@ -156,12 +169,12 @@ namespace WebSocketSharp.Net
 
 		public IPEndPoint LocalEndPoint
 			{
-			get { return _socket.LocalEndPoint; }
+			get { return (IPEndPoint)_localEndPoint; }
 			}
 
 		public IPEndPoint RemoteEndPoint
 			{
-			get { return _socket.RemoteEndPoint; }
+			get { return (IPEndPoint)_remoteEndPoint; }
 			}
 
 		public int Reuses

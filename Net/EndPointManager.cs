@@ -109,6 +109,9 @@ namespace WebSocketSharp.Net
 			var pref = new HttpListenerPrefix (uriPrefix);
 
 			var addr = convertToIPAddress (pref.Host);
+			if (addr == null)
+				throw new HttpListenerException (87, "Includes an invalid host.");
+
 			if (!addr.IsLocal ())
 				throw new HttpListenerException (87, "Includes an invalid host.");
 
@@ -158,7 +161,13 @@ namespace WebSocketSharp.Net
 
 		private static IPAddress convertToIPAddress (string hostname)
 			{
-			return hostname == "*" || hostname == "+" ? IPAddress.Any : hostname.ToIPAddress ();
+			if (hostname == "*")
+				return IPAddress.Any;
+
+			if (hostname == "+")
+				return IPAddress.Any;
+
+			return hostname.ToIPAddress ();
 			}
 
 		private static void removePrefix (string uriPrefix, HttpListener listener)
@@ -166,6 +175,9 @@ namespace WebSocketSharp.Net
 			var pref = new HttpListenerPrefix (uriPrefix);
 
 			var addr = convertToIPAddress (pref.Host);
+			if (addr == null)
+				return;
+
 			if (!addr.IsLocal ())
 				return;
 
