@@ -27,3 +27,4 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo ("SSMonoWebUILibrary")]
 [assembly: InternalsVisibleTo ("SSharpWebServer")]
+[assembly: InternalsVisibleTo ("SSharpWebSocketLibraryTests")]
