@@ -1131,7 +1131,6 @@ namespace WebSocketSharp.Server
 #if SSHARP
 			_adapter = adapter;
 #endif
-			_listener.RootPath = "./Public";
 			_listener = createListener (_hostname, _port, _secure);
 			_log = _listener.Log;
 			_services = new WebSocketServiceManager (_log);
