@@ -179,6 +179,25 @@ namespace WebSocketSharp
 				}
 			}
 
+		private static bool isHttpMethod (this string value)
+			{
+			return value == "GET"
+					 || value == "HEAD"
+					 || value == "POST"
+					 || value == "PUT"
+					 || value == "DELETE"
+					 || value == "CONNECT"
+					 || value == "OPTIONS"
+					 || value == "TRACE";
+			}
+
+		private static bool isHttpMethod10 (this string value)
+			{
+			return value == "GET"
+					 || value == "HEAD"
+					 || value == "POST";
+			}
+
 		private static void times (this ulong n, Action action)
 			{
 			for (ulong i = 0; i < n; i++)
@@ -193,7 +212,7 @@ namespace WebSocketSharp
 			if (cookie.Expires != DateTime.MinValue)
 				{
 				output.AppendFormat ("; Expires={0}",
-				                     cookie.Expires.ToUniversalTime ().ToString ("ddd, dd'-'MMM'-'yyyy HH':'mm':'ss 'GMT'", CultureInfo.CreateSpecificCulture ("en-US")));
+					cookie.Expires.ToUniversalTime ().ToString ("ddd, dd'-'MMM'-'yyyy HH':'mm':'ss 'GMT'", CultureInfo.CreateSpecificCulture ("en-US")));
 				}
 
 			if (!cookie.Path.IsNullOrEmpty ())
@@ -295,6 +314,28 @@ namespace WebSocketSharp
 		internal static byte[] CompressToArray (this Stream stream, CompressionMethod method)
 			{
 			return method == CompressionMethod.Deflate ? stream.compressToArray () : stream.ToByteArray ();
+			}
+
+		/// <summary>
+		/// Determines whether the specified string contains any of characters in
+		/// the specified array of <see cref="char"/>.
+		/// </summary>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> contains any of characters in
+		/// <paramref name="anyOf"/>; otherwise, <c>false</c>.
+		/// </returns>
+		/// <param name="value">
+		/// A <see cref="string"/> to test.
+		/// </param>
+		/// <param name="anyOf">
+		/// An array of <see cref="char"/> that contains one or more characters to
+		/// seek.
+		/// </param>
+		internal static bool Contains (this string value, params char[] anyOf)
+			{
+			return anyOf != null && anyOf.Length > 0
+					 ? value.IndexOfAny (anyOf) > -1
+					 : false;
 			}
 
 		internal static bool Contains (this NameValueCollection collection, string name)
@@ -485,52 +526,52 @@ namespace WebSocketSharp
 		internal static CookieCollection GetCookies (this NameValueCollection headers, bool response)
 			{
 			var val = headers[response ? "Set-Cookie" : "Cookie"];
-			return val != null
-					 ? CookieCollection.Parse (val, response)
-					 : new CookieCollection ();
+			return val != null ? CookieCollection.Parse (val, response) : new CookieCollection ();
 			}
 
 		internal static string GetDnsSafeHost (this Uri uri, bool bracketIPv6)
 			{
-			return bracketIPv6 && uri.HostNameType == UriHostNameType.IPv6
-					 ? uri.Host
-					 : uri.DnsSafeHost;
+			return bracketIPv6 && uri.HostNameType == UriHostNameType.IPv6 ? uri.Host : uri.DnsSafeHost;
 			}
 
 		internal static string GetMessage (this CloseStatusCode code)
 			{
 			return code == CloseStatusCode.ProtocolError
-				       ? "A WebSocket protocol error has occurred."
-				       : code == CloseStatusCode.UnsupportedData
-					         ? "An incorrect data has been received."
-					         : code == CloseStatusCode.Abnormal
-						           ? "An exception has occurred."
-						           : code == CloseStatusCode.InvalidData
-							             ? "An inconsistent data has been received."
-							             : code == CloseStatusCode.PolicyViolation
-								               ? "A policy violation has occurred."
-								               : code == CloseStatusCode.TooBig
-									                 ? "A too big data has been received."
-									                 : code == CloseStatusCode.MandatoryExtension
-										                   ? "WebSocket client didn't receive expected extension(s)."
-										                   : code == CloseStatusCode.ServerError
-											                     ? "WebSocket server got an internal error."
-											                     : code == CloseStatusCode.TlsHandshakeFailure ? "An error has occurred durreng a TLS handshake." : String.Empty;
+						? "A WebSocket protocol error has occurred."
+						: code == CloseStatusCode.UnsupportedData
+								? "An incorrect data has been received."
+								: code == CloseStatusCode.Abnormal
+										? "An exception has occurred."
+										: code == CloseStatusCode.InvalidData
+												? "An inconsistent data has been received."
+												: code == CloseStatusCode.PolicyViolation
+														? "A policy violation has occurred."
+														: code == CloseStatusCode.TooBig
+																? "A too big data has been received."
+																: code == CloseStatusCode.MandatoryExtension
+																		? "WebSocket client didn't receive expected extension(s)."
+																		: code == CloseStatusCode.ServerError
+																				? "WebSocket server got an internal error."
+																				: code == CloseStatusCode.TlsHandshakeFailure ? "An error has occurred durreng a TLS handshake." : String.Empty;
 			}
 
 		/// <summary>
-		/// Gets the name from the specified <see cref="string"/> that contains a pair of name and
-		/// value separated by a separator character.
+		/// Gets the name from the specified string that contains a pair of
+		/// name and value separated by a character.
 		/// </summary>
 		/// <returns>
-		/// A <see cref="string"/> that represents the name if any; otherwise, <c>null</c>.
+		///   <para>
+		///   A <see cref="string"/> that represents the name.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> if the name is not present.
+		///   </para>
 		/// </returns>
 		/// <param name="nameAndValue">
-		/// A <see cref="string"/> that contains a pair of name and value separated by a separator
-		/// character.
+		/// A <see cref="string"/> that contains a pair of name and value.
 		/// </param>
 		/// <param name="separator">
-		/// A <see cref="char"/> that represents the separator character.
+		/// A <see cref="char"/> used to separate name and value.
 		/// </param>
 		internal static string GetName (this string nameAndValue, char separator)
 			{
@@ -539,25 +580,50 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Gets the value from the specified <see cref="string"/> that contains a pair of name and
-		/// value separated by a separator character.
+		/// Gets the value from the specified string that contains a pair of
+		/// name and value separated by a character.
 		/// </summary>
 		/// <returns>
-		/// A <see cref="string"/> that represents the value if any; otherwise, <c>null</c>.
+		///   <para>
+		///   A <see cref="string"/> that represents the value.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> if the value is not present.
+		///   </para>
 		/// </returns>
 		/// <param name="nameAndValue">
-		/// A <see cref="string"/> that contains a pair of name and value separated by a separator
-		/// character.
+		/// A <see cref="string"/> that contains a pair of name and value.
 		/// </param>
 		/// <param name="separator">
-		/// A <see cref="char"/> that represents the separator character.
+		/// A <see cref="char"/> used to separate name and value.
 		/// </param>
 		internal static string GetValue (this string nameAndValue, char separator)
 			{
-			var idx = nameAndValue.IndexOf (separator);
-			return idx > -1 && idx < nameAndValue.Length - 1 ? nameAndValue.Substring (idx + 1).Trim () : null;
+			return nameAndValue.GetValue (separator, false);
 			}
 
+		/// <summary>
+		/// Gets the value from the specified string that contains a pair of
+		/// name and value separated by a character.
+		/// </summary>
+		/// <returns>
+		///   <para>
+		///   A <see cref="string"/> that represents the value.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> if the value is not present.
+		///   </para>
+		/// </returns>
+		/// <param name="nameAndValue">
+		/// A <see cref="string"/> that contains a pair of name and value.
+		/// </param>
+		/// <param name="separator">
+		/// A <see cref="char"/> used to separate name and value.
+		/// </param>
+		/// <param name="unquote">
+		/// A <see cref="bool"/>: <c>true</c> if unquotes the value; otherwise,
+		/// <c>false</c>.
+		/// </param>
 		internal static string GetValue (this string nameAndValue, char separator, bool unquote)
 			{
 			var idx = nameAndValue.IndexOf (separator);
@@ -611,6 +677,13 @@ namespace WebSocketSharp
 			return opcode == Opcode.Text || opcode == Opcode.Binary;
 			}
 
+		internal static bool IsHttpMethod (this string value, Version version)
+			{
+			return version == HttpVersion.Version10
+					 ? value.isHttpMethod10 ()
+					 : value.isHttpMethod ();
+			}
+
 		internal static bool IsPortNumber (this int value)
 			{
 			return value > 0 && value < 65536;
@@ -618,18 +691,13 @@ namespace WebSocketSharp
 
 		internal static bool IsReserved (this ushort code)
 			{
-			return code == 1004
-					 || code == 1005
-					 || code == 1006
-					 || code == 1015;
+			return code == 1004 || code == 1005 || code == 1006 || code == 1015;
 			}
 
 		internal static bool IsReserved (this CloseStatusCode code)
 			{
-			return code == CloseStatusCode.Undefined
-					 || code == CloseStatusCode.NoStatus
-					 || code == CloseStatusCode.Abnormal
-					 || code == CloseStatusCode.TlsHandshakeFailure;
+			return code == CloseStatusCode.Undefined || code == CloseStatusCode.NoStatus || code == CloseStatusCode.Abnormal
+					|| code == CloseStatusCode.TlsHandshakeFailure;
 			}
 
 		internal static bool IsSupported (this byte opcode)
@@ -645,7 +713,7 @@ namespace WebSocketSharp
 				var c = value[i];
 				if (c < 0x20)
 					{
-					if (!"\r\n\t".Contains (c))
+					if ("\r\n\t".IndexOf (c) == -1)
 						return false;
 
 					if (c == '\n')
@@ -655,7 +723,7 @@ namespace WebSocketSharp
 							break;
 
 						c = value[i];
-						if (!" \t".Contains (c))
+						if (" \t".IndexOf (c) == -1)
 							return false;
 						}
 
@@ -679,7 +747,7 @@ namespace WebSocketSharp
 				if (c >= 0x7f)
 					return false;
 
-				if (_tspecials.Contains (c))
+				if (_tspecials.IndexOf (c) > -1)
 					return false;
 				}
 
@@ -689,9 +757,7 @@ namespace WebSocketSharp
 		internal static bool KeepsAlive (this NameValueCollection headers, Version version)
 			{
 			var comparison = StringComparison.OrdinalIgnoreCase;
-			return version < HttpVersion.Version11
-					 ? headers.Contains ("Connection", "keep-alive", comparison)
-					 : !headers.Contains ("Connection", "close", comparison);
+			return version < HttpVersion.Version11 ? headers.Contains ("Connection", "keep-alive", comparison) : !headers.Contains ("Connection", "close", comparison);
 			}
 
 		internal static string Quote (this string value)
@@ -885,42 +951,48 @@ namespace WebSocketSharp
 		internal static IEnumerable<string> SplitHeaderValue (this string value, params char[] separators)
 			{
 			var len = value.Length;
-			var seps = new string (separators);
 
 			var buff = new StringBuilder (32);
+			var end = len - 1;
 			var escaped = false;
 			var quoted = false;
 
-			for (var i = 0; i < len; i++)
+			for (var i = 0; i <= end; i++)
 				{
 				var c = value[i];
+				buff.Append (c);
+
 				if (c == '"')
 					{
 					if (escaped)
-						escaped = !escaped;
-					else
-						quoted = !quoted;
-					}
-				else if (c == '\\')
-					{
-					if (i < len - 1 && value[i + 1] == '"')
-						escaped = true;
-					}
-				else if (seps.Contains (c))
-					{
-					if (!quoted)
 						{
-						yield return buff.ToString ();
-
-						buff.Length = 0;
+						escaped = false;
 						continue;
 						}
-					}
-				else
-					{
+
+					quoted = !quoted;
+					continue;
 					}
 
-				buff.Append (c);
+				if (c == '\\')
+					{
+					if (i == end)
+						break;
+
+					if (value[i + 1] == '"')
+						escaped = true;
+					}
+
+				if (Array.IndexOf (separators, c) > -1)
+					{
+					if (quoted)
+						continue;
+
+					buff.Length -= 1;
+					yield return buff.ToString ();
+
+					buff.Length = 0;
+					}
 				}
 
 			yield return buff.ToString ();
@@ -960,9 +1032,7 @@ namespace WebSocketSharp
 
 			var name = String.Format ("permessage-{0}", method.ToString ().ToLower ());
 
-			return parameters != null && parameters.Length > 0
-					 ? String.Format ("{0}; {1}", name, parameters.ToString ("; "))
-					 : name;
+			return parameters != null && parameters.Length > 0 ? String.Format ("{0}; {1}", name, parameters.ToString ("; ")) : name;
 			}
 
 		internal static IPAddress ToIPAddress (this string value)
@@ -997,9 +1067,7 @@ namespace WebSocketSharp
 
 		internal static string ToString (this IPAddress address, bool bracketIPv6)
 			{
-			return bracketIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6
-					 ? String.Format ("[{0}]", address.ToString ())
-					 : address.ToString ();
+			return bracketIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6 ? String.Format ("[{0}]", address.ToString ()) : address.ToString ();
 			}
 
 		internal static ushort ToUInt16 (this byte[] source, ByteOrder sourceOrder)
@@ -1176,20 +1244,21 @@ namespace WebSocketSharp
 		internal static string Unquote (this string value)
 			{
 			var start = value.IndexOf ('"');
-			if (start < 0)
+			if (start == -1)
 				return value;
 
 			var end = value.LastIndexOf ('"');
-			var len = end - start - 1;
+			if (end == start)
+				return value;
 
-			return len < 0 ? value : len == 0 ? String.Empty : value.Substring (start + 1, len).Replace ("\\\"", "\"");
+			var len = end - start - 1;
+			return len > 0 ? value.Substring (start + 1, len).Replace ("\\\"", "\"") : String.Empty;
 			}
 
 		internal static bool Upgrades (this NameValueCollection headers, string protocol)
 			{
 			var comparison = StringComparison.OrdinalIgnoreCase;
-			return headers.Contains ("Upgrade", protocol, comparison)
-					 && headers.Contains ("Connection", "Upgrade", comparison);
+			return headers.Contains ("Upgrade", protocol, comparison) && headers.Contains ("Connection", "Upgrade", comparison);
 			}
 
 		internal static string UTF8Decode (this byte[] bytes)
@@ -1252,25 +1321,6 @@ namespace WebSocketSharp
 		#endregion
 
 		#region Public Methods
-
-		/// <summary>
-		/// Determines whether the specified <see cref="string"/> contains any of characters
-		/// in the specified array of <see cref="char"/>.
-		/// </summary>
-		/// <returns>
-		/// <c>true</c> if <paramref name="value"/> contains any of <paramref name="chars"/>;
-		/// otherwise, <c>false</c>.
-		/// </returns>
-		/// <param name="value">
-		/// A <see cref="string"/> to test.
-		/// </param>
-		/// <param name="chars">
-		/// An array of <see cref="char"/> that contains characters to find.
-		/// </param>
-		public static bool Contains (this string value, params char[] chars)
-			{
-			return chars == null || chars.Length == 0 ? true : value == null || value.Length == 0 ? false : value.IndexOfAny (chars) > -1;
-			}
 
 		/// <summary>
 		/// Emits the specified <see cref="EventHandler"/> delegate if it isn't <see langword="null"/>.
@@ -1916,24 +1966,23 @@ namespace WebSocketSharp
 			var buff = source.ToHostOrder (sourceOrder);
 
 			return type == typeof(Boolean)
-				       ? (T)(object)BitConverter.ToBoolean (buff, 0)
-				       : type == typeof(Char)
-					         ? (T)(object)BitConverter.ToChar (buff, 0)
-					         : type == typeof(Double)
-						           ? (T)(object)BitConverter.ToDouble (buff, 0)
-						           : type == typeof(Int16)
-							             ? (T)(object)BitConverter.ToInt16 (buff, 0)
-							             : type == typeof(Int32)
-								               ? (T)(object)BitConverter.ToInt32 (buff, 0)
-								               : type == typeof(Int64)
-									                 ? (T)(object)BitConverter.ToInt64 (buff, 0)
-									                 : type == typeof(Single)
-										                   ? (T)(object)BitConverter.ToSingle (buff, 0)
-										                   : type == typeof(UInt16)
-											                     ? (T)(object)BitConverter.ToUInt16 (buff, 0)
-											                     : type == typeof(UInt32)
-												                       ? (T)(object)BitConverter.ToUInt32 (buff, 0)
-												                       : type == typeof(UInt64) ? (T)(object)BitConverter.ToUInt64 (buff, 0) : default (T);
+						? (T)(object)BitConverter.ToBoolean (buff, 0)
+						: type == typeof(Char)
+								? (T)(object)BitConverter.ToChar (buff, 0)
+								: type == typeof(Double)
+										? (T)(object)BitConverter.ToDouble (buff, 0)
+										: type == typeof(Int16)
+												? (T)(object)BitConverter.ToInt16 (buff, 0)
+												: type == typeof(Int32)
+														? (T)(object)BitConverter.ToInt32 (buff, 0)
+														: type == typeof(Int64)
+																? (T)(object)BitConverter.ToInt64 (buff, 0)
+																: type == typeof(Single)
+																		? (T)(object)BitConverter.ToSingle (buff, 0)
+																		: type == typeof(UInt16)
+																				? (T)(object)BitConverter.ToUInt16 (buff, 0)
+																				: type == typeof(UInt32)
+																						? (T)(object)BitConverter.ToUInt32 (buff, 0) : type == typeof(UInt64) ? (T)(object)BitConverter.ToUInt64 (buff, 0) : default (T);
 			}
 
 		/// <summary>
@@ -1955,26 +2004,26 @@ namespace WebSocketSharp
 			{
 			var type = typeof(T);
 			var bytes = type == typeof(Boolean)
-				            ? BitConverter.GetBytes ((Boolean)(object)value)
-				            : type == typeof(Byte)
-					              ? new byte[] {(Byte)(object)value}
-					              : type == typeof(Char)
-						                ? BitConverter.GetBytes ((Char)(object)value)
-						                : type == typeof(Double)
-							                  ? BitConverter.GetBytes ((Double)(object)value)
-							                  : type == typeof(Int16)
-								                    ? BitConverter.GetBytes ((Int16)(object)value)
-								                    : type == typeof(Int32)
-									                      ? BitConverter.GetBytes ((Int32)(object)value)
-									                      : type == typeof(Int64)
-										                        ? BitConverter.GetBytes ((Int64)(object)value)
-										                        : type == typeof(Single)
-											                          ? BitConverter.GetBytes ((Single)(object)value)
-											                          : type == typeof(UInt16)
-												                            ? BitConverter.GetBytes ((UInt16)(object)value)
-												                            : type == typeof(UInt32)
-													                              ? BitConverter.GetBytes ((UInt32)(object)value)
-													                              : type == typeof(UInt64) ? BitConverter.GetBytes ((UInt64)(object)value) : WebSocket.EmptyBytes;
+								? BitConverter.GetBytes ((Boolean)(object)value)
+								: type == typeof(Byte)
+										? new byte[] {(Byte)(object)value}
+										: type == typeof(Char)
+												? BitConverter.GetBytes ((Char)(object)value)
+												: type == typeof(Double)
+														? BitConverter.GetBytes ((Double)(object)value)
+														: type == typeof(Int16)
+																? BitConverter.GetBytes ((Int16)(object)value)
+																: type == typeof(Int32)
+																		? BitConverter.GetBytes ((Int32)(object)value)
+																		: type == typeof(Int64)
+																				? BitConverter.GetBytes ((Int64)(object)value)
+																				: type == typeof(Single)
+																						? BitConverter.GetBytes ((Single)(object)value)
+																						: type == typeof(UInt16)
+																								? BitConverter.GetBytes ((UInt16)(object)value)
+																								: type == typeof(UInt32)
+																										? BitConverter.GetBytes ((UInt32)(object)value)
+																										: type == typeof(UInt64) ? BitConverter.GetBytes ((UInt64)(object)value) : WebSocket.EmptyBytes;
 
 			if (bytes.Length > 1 && !order.IsHostOrder ())
 				Array.Reverse (bytes);
@@ -2070,11 +2119,15 @@ namespace WebSocketSharp
 			}
 
 		/// <summary>
-		/// Converts the specified <see cref="string"/> to a <see cref="Uri"/>.
+		/// Converts the specified string to a <see cref="Uri"/>.
 		/// </summary>
 		/// <returns>
-		/// A <see cref="Uri"/> converted from <paramref name="value"/> or
-		/// <see langword="null"/> if the convert has failed.
+		///   <para>
+		///   A <see cref="Uri"/> converted from <paramref name="value"/>.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> if the conversion has failed.
+		///   </para>
 		/// </returns>
 		/// <param name="value">
 		/// A <see cref="string"/> to convert.
