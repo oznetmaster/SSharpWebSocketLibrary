@@ -50,10 +50,9 @@ namespace WebSocketSharp
 		{
 		#region Private Fields
 
+		private CookieCollection _cookies;
 		private string _method;
 		private string _uri;
-		private bool _websocketRequest;
-		private bool _websocketRequestSet;
 
 		#endregion
 
@@ -95,7 +94,10 @@ namespace WebSocketSharp
 			{
 			get
 				{
-				return Headers.GetCookies (false);
+				if (_cookies == null)
+					_cookies = Headers.GetCookies (false);
+
+				return _cookies;
 				}
 			}
 
@@ -111,16 +113,9 @@ namespace WebSocketSharp
 			{
 			get
 				{
-				if (!_websocketRequestSet)
-					{
-					_websocketRequest = _method == "GET"
-											  && ProtocolVersion > HttpVersion.Version10
-											  && Headers.Upgrades ("websocket");
-
-					_websocketRequestSet = true;
-					}
-
-				return _websocketRequest;
+				return _method == "GET"
+						 && ProtocolVersion > HttpVersion.Version10
+						 && Headers.Upgrades ("websocket");
 				}
 			}
 

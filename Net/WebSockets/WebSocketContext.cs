@@ -4,8 +4,8 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2016 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright (c) 2012-2018 sta.blockhead
+ * Copyright © 2018 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@ using System.Security.Principal;
 namespace WebSocketSharp.Net.WebSockets
 	{
 	/// <summary>
-	/// Exposes the properties used to access the information in a WebSocket handshake request.
+	/// Exposes the access to the information in a WebSocket handshake request.
 	/// </summary>
 	/// <remarks>
 	/// This class is an abstract class.
@@ -62,10 +62,11 @@ namespace WebSocketSharp.Net.WebSockets
 		#region Public Properties
 
 		/// <summary>
-		/// Gets the HTTP cookies included in the request.
+		/// Gets the HTTP headers included in the handshake request.
 		/// </summary>
 		/// <value>
-		/// A <see cref="WebSocketSharp.Net.CookieCollection"/> that contains the cookies.
+		/// A <see cref="WebSocketSharp.Net.CookieCollection"/> that contains
+		/// the cookies.
 		/// </value>
 		public abstract CookieCollection CookieCollection { get; }
 
@@ -78,10 +79,11 @@ namespace WebSocketSharp.Net.WebSockets
 		public abstract NameValueCollection Headers { get; }
 
 		/// <summary>
-		/// Gets the value of the Host header included in the request.
+		/// Gets the value of the Host header included in the handshake request.
 		/// </summary>
 		/// <value>
-		/// A <see cref="string"/> that represents the value of the Host header.
+		/// A <see cref="string"/> that represents the server host name requested by
+		/// the client.
 		/// </value>
 		public abstract string Host { get; }
 
@@ -94,18 +96,21 @@ namespace WebSocketSharp.Net.WebSockets
 		public abstract bool IsAuthenticated { get; }
 
 		/// <summary>
-		/// Gets a value indicating whether the client connected from the local computer.
+		/// Gets a value indicating whether the handshake request is sent from
+		/// the local computer.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the client connected from the local computer; otherwise, <c>false</c>.
+		/// <c>true</c> if the handshake request is sent from the same computer
+		/// as the server; otherwise, <c>false</c>.
 		/// </value>
 		public abstract bool IsLocal { get; }
 
 		/// <summary>
-		/// Gets a value indicating whether the WebSocket connection is secured.
+		/// Gets a value indicating whether a secure connection is used to send
+		/// the handshake request.
 		/// </summary>
 		/// <value>
-		/// <c>true</c> if the connection is secured; otherwise, <c>false</c>.
+		/// <c>true</c> if the connection is secure; otherwise, <c>false</c>.
 		/// </value>
 		public abstract bool IsSecureConnection { get; }
 
@@ -118,18 +123,23 @@ namespace WebSocketSharp.Net.WebSockets
 		public abstract bool IsWebSocketRequest { get; }
 
 		/// <summary>
-		/// Gets the value of the Origin header included in the request.
+		/// Gets the value of the Origin header included in the handshake request.
 		/// </summary>
 		/// <value>
-		/// A <see cref="string"/> that represents the value of the Origin header.
+		///   <para>
+		///   A <see cref="string"/> that represents the value of the Origin header.
+		///   </para>
+		///   <para>
+		///   <see langword="null"/> if the header is not present.
+		///   </para>
 		/// </value>
 		public abstract string Origin { get; }
 
 		/// <summary>
-		/// Gets the query string included in the request.
+		/// Gets the query string included in the handshake request.
 		/// </summary>
 		/// <value>
-		/// A <see cref="NameValueCollection"/> that contains the query string parameters.
+		/// A <see cref="NameValueCollection"/> that contains the query parameters.
 		/// </value>
 		public abstract NameValueCollection QueryString { get; }
 
@@ -137,19 +147,23 @@ namespace WebSocketSharp.Net.WebSockets
 		/// Gets the URI requested by the client.
 		/// </summary>
 		/// <value>
-		/// A <see cref="Uri"/> that represents the requested URI.
+		/// A <see cref="Uri"/> that represents the URI parsed from the request.
 		/// </value>
 		public abstract Uri RequestUri { get; }
 
 		/// <summary>
-		/// Gets the value of the Sec-WebSocket-Key header included in the request.
+		/// Gets the value of the Sec-WebSocket-Key header included in
+		/// the handshake request.
 		/// </summary>
-		/// <remarks>
-		/// This property provides a part of the information used by the server to prove that
-		/// it received a valid WebSocket handshake request.
-		/// </remarks>
 		/// <value>
-		/// A <see cref="string"/> that represents the value of the Sec-WebSocket-Key header.
+		///   <para>
+		///   A <see cref="string"/> that represents the value of
+		///   the Sec-WebSocket-Key header.
+		///   </para>
+		///   <para>
+		///   The value is used to prove that the server received
+		///   a valid WebSocket handshake request.
+		///   </para>
 		/// </value>
 		public abstract string SecWebSocketKey { get; }
 
@@ -170,43 +184,45 @@ namespace WebSocketSharp.Net.WebSockets
 		public abstract IEnumerable<string> SecWebSocketProtocols { get; }
 
 		/// <summary>
-		/// Gets the value of the Sec-WebSocket-Version header included in the request.
+		/// Gets the value of the Sec-WebSocket-Version header included in
+		/// the handshake request.
 		/// </summary>
-		/// <remarks>
-		/// This property represents the WebSocket protocol version.
-		/// </remarks>
 		/// <value>
-		/// A <see cref="string"/> that represents the value of the Sec-WebSocket-Version header.
+		/// A <see cref="string"/> that represents the WebSocket protocol
+		/// version specified by the client.
 		/// </value>
 		public abstract string SecWebSocketVersion { get; }
 
 		/// <summary>
-		/// Gets the server endpoint as an IP address and a port number.
+		/// Gets the endpoint to which the handshake request is sent.
 		/// </summary>
 		/// <value>
-		/// A <see cref="System.Net.IPEndPoint"/> that represents the server endpoint.
+		/// A <see cref="System.Net.IPEndPoint"/> that represents the server IP
+		/// address and port number.
 		/// </value>
 		public abstract IPEndPoint ServerEndPoint { get; }
 
 		/// <summary>
-		/// Gets the client information (identity, authentication, and security roles).
+		/// Gets the client information.
 		/// </summary>
 		/// <value>
-		/// A <see cref="IPrincipal"/> instance that represents the client information.
+		/// A <see cref="IPrincipal"/> instance that represents identity,
+		/// authentication, and security roles for the client.
 		/// </value>
 		public abstract IPrincipal User { get; }
 
 		/// <summary>
-		/// Gets the client endpoint as an IP address and a port number.
+		/// Gets the endpoint from which the handshake request is sent.
 		/// </summary>
 		/// <value>
-		/// A <see cref="System.Net.IPEndPoint"/> that represents the client endpoint.
+		/// A <see cref="System.Net.IPEndPoint"/> that represents the client IP
+		/// address and port number.
 		/// </value>
 		public abstract IPEndPoint UserEndPoint { get; }
 
 		/// <summary>
-		/// Gets the <see cref="WebSocketSharp.WebSocket"/> instance used for
-		/// two-way communication between client and server.
+		/// Gets the WebSocket instance used for two-way communication between
+		/// the client and server.
 		/// </summary>
 		/// <value>
 		/// A <see cref="WebSocketSharp.WebSocket"/>.
