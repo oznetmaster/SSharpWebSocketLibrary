@@ -1772,7 +1772,7 @@ namespace WebSocketSharp.Server
 					IWebSocketSession session;
 					if (_sessions.TryGetValue (id, out session))
 						{
-						var state = session.State;
+						var state = session.ConnectionState;
 						if (state == WebSocketState.Open)
 							session.Context.WebSocket.Close (CloseStatusCode.Abnormal);
 						else if (state == WebSocketState.Closing)
