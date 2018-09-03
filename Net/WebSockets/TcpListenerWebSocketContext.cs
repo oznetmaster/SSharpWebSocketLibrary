@@ -315,7 +315,7 @@ namespace WebSocketSharp.Net.WebSockets
 				if (_queryString == null)
 					{
 					var uri = RequestUri;
-					_queryString = HttpUtility.InternalParseQueryString (uri != null ? uri.Query : null, Encoding.UTF8);
+					_queryString = QueryStringCollection.Parse (uri != null ? uri.Query : null, Encoding.UTF8);
 					}
 
 				return _queryString;
