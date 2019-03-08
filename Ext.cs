@@ -15,8 +15,8 @@
  * Copyright (c) 2003 Ben Maurer
  * Copyright (c) 2003, 2005, 2009 Novell, Inc. (http://www.novell.com)
  * Copyright (c) 2009 Stephane Delcroix
- * Copyright (c) 2010-2016 sta.blockhead
- * Copyright © 2016 Nivloc Enterprises Ltd
+ * Copyright (c) 2010-2019 sta.blockhead
+ * Copyright © 2019 Nivloc Enterprises Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -232,42 +232,39 @@ namespace WebSocketSharp
 
 		private static string toResponseStringVersion1 (this Cookie cookie)
 			{
-			var output = new StringBuilder (64);
-			output.AppendFormat ("{0}={1}; Version={2}", cookie.Name, cookie.Value, cookie.Version);
+			var buff = new StringBuilder (64);
+			buff.AppendFormat ("{0}={1}; Version={2}", cookie.Name, cookie.Value, cookie.Version);
 
 			if (cookie.Expires != DateTime.MinValue)
-				output.AppendFormat ("; Max-Age={0}", cookie.MaxAge ());
+				buff.AppendFormat ("; Max-Age={0}", cookie.MaxAge ());
 
 			if (!cookie.Path.IsNullOrEmpty ())
-				output.AppendFormat ("; Path={0}", cookie.Path);
+				buff.AppendFormat ("; Path={0}", cookie.Path);
 
 			if (!cookie.Domain.IsNullOrEmpty ())
-				output.AppendFormat ("; Domain={0}", cookie.Domain);
+				buff.AppendFormat ("; Domain={0}", cookie.Domain);
 
 			if (!cookie.Port.IsNullOrEmpty ())
 				{
-				if (cookie.Port == "\"\"")
-					output.Append ("; Port");
-				else
-					output.AppendFormat ("; Port={0}", cookie.Port);
+				buff.Append (cookie.Port != "\"\"" ? String.Format ("; Port={0}", cookie.Port) : "; Port");
 				}
 
 			if (!cookie.Comment.IsNullOrEmpty ())
-				output.AppendFormat ("; Comment={0}", cookie.Comment.UrlEncode ());
+				buff.AppendFormat ("; Comment={0}", HttpUtility.UrlEncode (cookie.Comment));
 
 			if (cookie.CommentUri != null)
 				{
 				var url = cookie.CommentUri.OriginalString;
-				output.AppendFormat ("; CommentURL={0}", url.IsToken () ? url : url.Quote ());
+				buff.AppendFormat ("; CommentURL={0}", url.IsToken () ? url : url.Quote ());
 				}
 
 			if (cookie.Discard)
-				output.Append ("; Discard");
+				buff.Append ("; Discard");
 
 			if (cookie.Secure)
-				output.Append ("; Secure");
+				buff.Append ("; Secure");
 
-			return output.ToString ();
+			return buff.ToString ();
 			}
 
 		#endregion
@@ -1013,11 +1010,12 @@ namespace WebSocketSharp
 		internal static CompressionMethod ToCompressionMethod (this string value)
 			{
 #if NETCF
-			foreach (CompressionMethod method in Enum2.GetValues (typeof(CompressionMethod)))
-				{
+			var methods = Enum2.GetValues (typeof (CompressionMethod));
 #else
-			foreach (CompressionMethod method in Enum.GetValues (typeof (CompressionMethod)))
+			var methods = Enum.GetValues (typeof (CompressionMethod));
 #endif
+			foreach (CompressionMethod method in methods) 
+				{
 				if (method.ToExtensionString () == value)
 					return method;
 				}
@@ -1067,7 +1065,10 @@ namespace WebSocketSharp
 
 		internal static string ToString (this IPAddress address, bool bracketIPv6)
 			{
-			return bracketIPv6 && address.AddressFamily == AddressFamily.InterNetworkV6 ? String.Format ("[{0}]", address.ToString ()) : address.ToString ();
+			return bracketIPv6
+					  && address.AddressFamily == AddressFamily.InterNetworkV6
+					  ? String.Format ("[{0}]", address.ToString ())
+					  : address.ToString ();
 			}
 
 		internal static ushort ToUInt16 (this byte[] source, ByteOrder sourceOrder)
@@ -1259,6 +1260,16 @@ namespace WebSocketSharp
 			{
 			var comparison = StringComparison.OrdinalIgnoreCase;
 			return headers.Contains ("Upgrade", protocol, comparison) && headers.Contains ("Connection", "Upgrade", comparison);
+			}
+
+		internal static string UrlDecode (this string value, Encoding encoding)
+			{
+			return HttpUtility.UrlDecode (value, encoding);
+			}
+
+		internal static string UrlEncode (this string value, Encoding encoding)
+			{
+			return HttpUtility.UrlEncode (value, encoding);
 			}
 
 		internal static string UTF8Decode (this byte[] bytes)
@@ -2138,36 +2149,6 @@ namespace WebSocketSharp
 			Uri.TryCreate (value, value.MaybeUri () ? UriKind.Absolute : UriKind.Relative, out ret);
 
 			return ret;
-			}
-
-		/// <summary>
-		/// URL-decodes the specified <see cref="string"/>.
-		/// </summary>
-		/// <returns>
-		/// A <see cref="string"/> that receives the decoded string, or the <paramref name="value"/>
-		/// if it's <see langword="null"/> or empty.
-		/// </returns>
-		/// <param name="value">
-		/// A <see cref="string"/> to decode.
-		/// </param>
-		public static string UrlDecode (this string value)
-			{
-			return value != null && value.Length > 0 ? HttpUtility.UrlDecode (value) : value;
-			}
-
-		/// <summary>
-		/// URL-encodes the specified <see cref="string"/>.
-		/// </summary>
-		/// <returns>
-		/// A <see cref="string"/> that receives the encoded string, or <paramref name="value"/>
-		/// if it's <see langword="null"/> or empty.
-		/// </returns>
-		/// <param name="value">
-		/// A <see cref="string"/> to encode.
-		/// </param>
-		public static string UrlEncode (this string value)
-			{
-			return value != null && value.Length > 0 ? HttpUtility.UrlEncode (value) : value;
 			}
 
 #if !CLIENT

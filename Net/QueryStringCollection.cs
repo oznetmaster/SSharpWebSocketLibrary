@@ -67,6 +67,21 @@ namespace WebSocketSharp.Net
 
 		#endregion
 
+		#region Private Methods
+
+		private static string urlDecode (string s, Encoding encoding)
+			{
+			return s.IndexOfAny (new[] { '%', '+' }) > -1
+#if SSHARP
+					 ? Crestron.SimplSharp.Net.HttpUtility.UrlDecode (s, encoding)
+#else
+					 ? HttpUtility.UrlDecode (s, encoding)
+#endif
+					 : s;
+			}
+
+		#endregion
+
 		#region Public Methods
 
 		public static QueryStringCollection Parse (string query)
@@ -107,38 +122,22 @@ namespace WebSocketSharp.Net
 				var i = component.IndexOf ('=');
 				if (i < 0)
 					{
-#if SSHARP
-					ret.Add (null, Crestron.SimplSharp.Net.HttpUtility.UrlDecode (component, encoding));
-#else
-					ret.Add (null, HttpUtility.UrlDecode (component, encoding));
-#endif
+					ret.Add (null, urlDecode (component, encoding));
 					continue;
 					}
 
 				if (i == 0)
 					{
-					ret.Add (
-#if SSHARP
-					  null, Crestron.SimplSharp.Net.HttpUtility.UrlDecode (component.Substring (1), encoding)
-#else
-					  null, HttpUtility.UrlDecode (component.Substring (1), encoding)
-#endif
-					);
-
+					ret.Add (null, urlDecode (component.Substring (1), encoding));
 					continue;
 					}
 
-#if SSHARP
-				var name = Crestron.SimplSharp.Net.HttpUtility.UrlDecode (component.Substring (0, i), encoding);
-				var val = component.Length > i + 1
-							 ? Crestron.SimplSharp.Net.HttpUtility.UrlDecode (component.Substring (i + 1), encoding)
+				var name = urlDecode (component.Substring (0, i), encoding);
+
+				var start = i + 1;
+				var val = start < len
+							 ? urlDecode (component.Substring (start), encoding)
 							 : String.Empty;
-#else
-				var name = HttpUtility.UrlDecode (component.Substring (0, i), encoding);
-				var val = component.Length > i + 1
-							 ? HttpUtility.UrlDecode (component.Substring (i + 1), encoding)
-							 : String.Empty;
-#endif
 
 				ret.Add (name, val);
 				}
@@ -148,9 +147,6 @@ namespace WebSocketSharp.Net
 
 		public override string ToString ()
 			{
-			if (Count == 0)
-				return String.Empty;
-
 			var buff = new StringBuilder ();
 
 			foreach (var key in AllKeys)

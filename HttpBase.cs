@@ -216,6 +216,9 @@ namespace WebSocketSharp
 					  ? "A timeout has occurred while reading an HTTP request/response."
 					  : exception != null
 						? "An exception has occurred while reading an HTTP request/response."
+#if SSHARP
+							+ String.Format (" [{0}]", exception.Message)
+#endif
 						: null;
 
 			if (msg != null)

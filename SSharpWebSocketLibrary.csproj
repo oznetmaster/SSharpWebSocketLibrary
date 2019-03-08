@@ -208,6 +208,9 @@
     <None Include="Properties\ControlSystem.cfg" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="LICENSE.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Compatibility\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
