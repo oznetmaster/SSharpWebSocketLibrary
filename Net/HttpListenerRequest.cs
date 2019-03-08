@@ -520,7 +520,7 @@ namespace WebSocketSharp.Net
 				if (_queryString == null)
 					{
 					var url = Url;
-					_queryString = HttpUtility.InternalParseQueryString (url != null ? url.Query : null, Encoding.UTF8);
+					_queryString = QueryStringCollection.Parse (url != null ? url.Query : null, Encoding.UTF8);
 					}
 
 				return _queryString;

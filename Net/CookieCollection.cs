@@ -388,7 +388,7 @@ namespace WebSocketSharp.Net
 				else if (pair.StartsWith ("comment", StringComparison.InvariantCultureIgnoreCase))
 					{
 					if (cookie != null)
-						cookie.Comment = pair.GetValue ('=').UrlDecode ();
+						cookie.Comment = urlDecode (pair.GetValue ('='), Encoding.UTF8);
 					}
 				else if (pair.StartsWith ("commenturl", StringComparison.InvariantCultureIgnoreCase))
 					{
@@ -466,6 +466,28 @@ namespace WebSocketSharp.Net
 		private static string[] splitCookieHeaderValue (string value)
 			{
 			return new List<string> (value.SplitHeaderValue (',', ';')).ToArray ();
+			}
+
+		private static string urlDecode (string s, Encoding encoding)
+			{
+			if (s == null)
+				return null;
+
+			if (s.IndexOfAny (new[] { '%', '+' }) == -1)
+				return s;
+
+#if SSHARP
+			return Crestron.SimplSharp.Net.HttpUtility.UrlDecode (s, encoding);
+#else
+			try
+				{
+				return HttpUtility.UrlDecode (s, encoding);
+				}
+			catch
+				{
+				return null;
+				}
+#endif
 			}
 
 		#endregion
