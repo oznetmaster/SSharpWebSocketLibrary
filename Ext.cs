@@ -828,7 +828,7 @@ namespace WebSocketSharp
 				try
 					{
 					var nread = stream.EndRead (ar);
-					if (nread == 0 && retry < _retry)
+					if (nread == 0 && length != 0 && retry < _retry)
 						{
 						retry++;
 						stream.BeginRead (buff, offset, length, callback, null);
