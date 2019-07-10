@@ -601,11 +601,7 @@ namespace WebSocketSharp.Server
 					throw new ArgumentException ("Already in use.", "path");
 
 				host = new WebSocketServiceHost<TBehavior> (
-#if SSHARP
-							path, Activator.CreateInstance<TBehavior>, initializer, _log
-#else
-							path, () => new TBehavior (), initializer, _logger
-#endif
+							path, () => new TBehavior (), initializer, _log
 						 );
 
 				if (!_clean)

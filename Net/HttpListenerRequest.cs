@@ -78,7 +78,7 @@ namespace WebSocketSharp.Net
 		private HttpConnection _connection;
 		private Encoding _contentEncoding;
 		private byte[] _content;
-		private string _contentType;
+		//private string _contentType;
 		private long _contentLength;
 		private HttpListenerContext _context;
 		private CookieCollection _cookies;
@@ -125,7 +125,7 @@ namespace WebSocketSharp.Net
 			_connection = request._connection;
 			_contentEncoding = request._contentEncoding;
 			_content = request._content;
-			_contentType = request._contentType;
+			//_contentType = request._contentType;
 			_contentLength = request._contentLength;
 			_context = request._context;
 			_cookies = request._cookies;
@@ -295,7 +295,7 @@ namespace WebSocketSharp.Net
 			{
 			get
 				{
-				return _contentType;
+				return _headers["Content-Type"];
 				}
 			/*
 			set
